@@ -1,0 +1,42 @@
+image: "/assets/Minifantasy_TrueHeroes_v1.0/Minifantasy_TrueHeroes_Assets/Barbarian/General_Animations/BarbarianFullSpriteSheet.png"
+tile_width: 32
+tile_height: 32
+collision_groups: "default"
+animations {
+  id: "attack"
+  start_tile: 87
+  end_tile: 91
+  fps: 5
+}
+animations {
+  id: "damage"
+  start_tile: 181
+  end_tile: 184
+  fps: 5
+}
+animations {
+  id: "dead"
+  start_tile: 261
+  end_tile: 280
+  fps: 10
+}
+animations {
+  id: "idle"
+  start_tile: 1
+  end_tile: 16
+  playback: PLAYBACK_LOOP_FORWARD
+  fps: 10
+}
+animations {
+  id: "jump"
+  start_tile: 1
+  end_tile: 1
+}
+animations {
+  id: "walk"
+  start_tile: 81
+  end_tile: 84
+  playback: PLAYBACK_LOOP_FORWARD
+  fps: 5
+}
+extrude_borders: 2

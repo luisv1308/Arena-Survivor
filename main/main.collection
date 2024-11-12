@@ -3,4 +3,12 @@ instances {
   id: "root"
   prototype: "/main/root.go"
 }
+collection_instances {
+  id: "Barbarian"
+  collection: "/main/objects/player/Barbarian/Barbarian.collection"
+  position {
+    x: 116.0
+    y: 80.0
+  }
+}
 scale_along_z: 0
