@@ -1,4 +1,8 @@
 -- player.script
+local input_left = hash("left")
+local input_right = hash("right")
+local input_up = hash("up")
+local input_down = hash("down")
 
 function init(self)
     msg.post(".", "acquire_input_focus")
@@ -7,6 +11,7 @@ function init(self)
     self.moving = false  -- Estado de movimiento
     self.dir = vmath.vector3(0, 0, 0)  -- Dirección del movimiento
     self.current_animation = nil  -- Almacena la animación actual
+    self.inputs_released = { left = true, right = true, up = true, down = true } -- check if input is released
 end
 
 function update(self, dt)
@@ -19,30 +24,58 @@ end
 
 function on_input(self, action_id, action)
     -- Controlar direcciones de movimiento
-    if action_id == hash("left") then
+    if action_id == input_left then
         if action.pressed then
 			self.input.x = -1
-		elseif action.released then
-			self.input.x = 0
+            self.inputs_released.left = false
+        end
+		if action.released then
+			if not self.inputs_released.right then
+                self.input.x = 1
+            else
+                self.input.x = 0
+            end
+            self.inputs_released.left = true
 		end
-	elseif action_id == hash("right") then
+	elseif action_id == input_right then
 		if action.pressed then
 			self.input.x = 1
-		elseif action.released then
-			self.input.x = 0
+            self.inputs_released.right = false
+        end
+		if action.released then
+			if not self.inputs_released.left then
+                self.input.x = -1
+            else
+                self.input.x = 0
+            end
+            self.inputs_released.right = true
 		end
-	elseif action_id == hash("up") then
-		if action.pressed then
-			self.input.y = 1
-		elseif action.released then
-			self.input.y = 0
-		end
-	elseif action_id == hash("down") then
-		if action.pressed then
-			self.input.y = -1
-		elseif action.released then
-			self.input.y = 0
-		end
+	elseif action_id == input_up then
+        if action.pressed then
+            self.input.y = 1
+            self.inputs_released.up = false
+        end
+        if action.released then
+            if not self.inputs_released.down then
+                self.input.y = -1
+            else
+                self.input.y = 0
+            end
+            self.inputs_released.up = true
+        end
+    elseif action_id == input_down then
+        if action.pressed then
+            self.input.y = -1
+            self.inputs_released.down = false
+        end
+        if action.released then
+            if not self.inputs_released.up then
+                self.input.y = 1
+            else
+                self.input.y = 0
+            end
+            self.inputs_released.down = true
+        end
 	end
     -- Si hay movimiento, cambiar la dirección y la animación
     local size_vector = vmath.length(self.input)
@@ -69,7 +102,7 @@ end
 function play_animation(self, animation)
     -- Solo cambia la animación si es diferente de la actual
     if self.current_animation ~= animation then
-        msg.post("Barbarian#sprite", "play_animation", { id = hash(animation) })
+        msg.post("#sprite", "play_animation", { id = hash(animation) })
         self.current_animation = animation
     end
 end

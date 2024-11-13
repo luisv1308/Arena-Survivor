@@ -22,7 +22,7 @@ animations {
 }
 animations {
   id: "idle"
-  start_tile: 1
+  start_tile: 2
   end_tile: 16
   playback: PLAYBACK_LOOP_FORWARD
   fps: 10
