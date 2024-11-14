@@ -28,14 +28,56 @@ animations {
   fps: 10
 }
 animations {
+  id: "idle_left"
+  start_tile: 21
+  end_tile: 36
+  playback: PLAYBACK_LOOP_FORWARD
+  fps: 10
+}
+animations {
   id: "jump"
   start_tile: 1
   end_tile: 1
 }
 animations {
-  id: "walk"
+  id: "walk_down_left"
+  start_tile: 101
+  end_tile: 104
+  playback: PLAYBACK_LOOP_FORWARD
+  fps: 5
+}
+animations {
+  id: "walk_down_right"
   start_tile: 81
   end_tile: 84
+  playback: PLAYBACK_LOOP_FORWARD
+  fps: 5
+}
+animations {
+  id: "walk_left"
+  start_tile: 101
+  end_tile: 104
+  playback: PLAYBACK_LOOP_FORWARD
+  fps: 5
+}
+animations {
+  id: "walk_right"
+  start_tile: 81
+  end_tile: 84
+  playback: PLAYBACK_LOOP_FORWARD
+  fps: 5
+}
+animations {
+  id: "walk_up_left"
+  start_tile: 141
+  end_tile: 144
+  playback: PLAYBACK_LOOP_FORWARD
+  fps: 5
+}
+animations {
+  id: "walk_up_right"
+  start_tile: 121
+  end_tile: 124
   playback: PLAYBACK_LOOP_FORWARD
   fps: 5
 }
