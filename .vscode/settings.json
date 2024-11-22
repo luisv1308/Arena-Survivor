@@ -15,7 +15,8 @@
         "redefined-local"
     ],
     "Lua.workspace.library": [
-        "~\\AppData\\Roaming\\Code - Insiders\\User\\globalStorage\\astronachos.defold"
+        "~\\AppData\\Roaming\\Code - Insiders\\User\\globalStorage\\astronachos.defold",
+        "~\\AppData\\Roaming\\Code - Insiders\\User\\workspaceStorage\\aca7a2a16ad0b2099a273c9829503825\\astronachos.defold"
     ],
     "files.associations": {
         "*.json.liquid": "json",
