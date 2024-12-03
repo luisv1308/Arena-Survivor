@@ -1,7 +1,19 @@
+
+local function_registry = require "main.function_registry"
+
 function init(self)
 	-- Add initialization code here
 	-- Learn more: https://defold.com/manuals/script/
 	-- Remove this function if not needed
+	self.cooldown = 0
+    local player_id = tostring(go.get_id("Player")) -- ID del padre (Player)
+
+    -- Registra la función personalizada
+    function_registry.register(player_id, "attack", attack)
+end
+
+function attack(self)
+	print("El Barbarian ataca con fuerza bruta 2" )
 end
 
 function final(self)
@@ -14,6 +26,14 @@ function update(self, dt)
 	-- Add update code here
 	-- Learn more: https://defold.com/manuals/script/
 	-- Remove this function if not needed
+end
+
+function custom_update(self, dt)
+    -- Lógica específica del Barbarian
+    if self.cooldown > 0 then
+        self.cooldown = self.cooldown - dt
+    end
+    print("Barbarian está en update. Cooldown:", self.cooldown)
 end
 
 function fixed_update(self, dt)
@@ -29,6 +49,16 @@ function on_message(self, message_id, message, sender)
 	-- Add message-handling code here
 	-- Learn more: https://defold.com/manuals/message-passing/
 	-- Remove this function if not needed
+	if message_id == hash("update") then
+        custom_update(self, message.dt)
+    end
+
+	if message_id == hash("init_player_vars") then
+        -- Accede al padre (Player) y sobrescribe las variables
+        local parent = go.get_id("Player")
+        msg.post(parent, "set_player_vars", { hp = 150, speed = 180, attack_power = 25 })
+    end
+
 end
 
 function on_input(self, action_id, action)

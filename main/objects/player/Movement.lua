@@ -78,20 +78,22 @@ function M.handle_input(self, action_id, action, Animation)
 
         -- Cambiar la animación de acuerdo con la dirección y checa si va izquierda o derecha
         if self.dir.y > 0 and self.player_face_dir.x > 0 then
-            print("walk_up_right")
+            --print("walk_up_right")
             Animation.play_animation(self, "walk_up_right")
         elseif self.dir.y > 0 and self.player_face_dir.x < 0 then
-            print("walk_up_left")
+            --print("walk_up_left")
             Animation.play_animation(self, "walk_up_left")
         elseif self.dir.y < 0 and self.player_face_dir.x > 0 then
-            print("walk_down_right")
+            --print("walk_down_right")
             Animation.play_animation(self, "walk_down_right")
         elseif self.dir.y < 0 and self.player_face_dir.x < 0 then
-            print("walk_down_left")
+            --print("walk_down_left")
             Animation.play_animation(self, "walk_down_left")
         elseif self.dir.x > 0 then
+            --print("walk_right")
             Animation.play_animation(self, "walk_right")
         elseif self.dir.x < 0 then
+            --print("walk_left")
             Animation.play_animation(self, "walk_left")
         end
     else

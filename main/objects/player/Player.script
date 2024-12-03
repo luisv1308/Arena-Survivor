@@ -1,12 +1,20 @@
 -- player.script
 -- agregar caracteristicas al basicas del jugador
+go.property("child_class_url", hash("/Mage/Mage"))
 
 local Animation = require "main/objects/player/Animation"
 local Movement = require "main/objects/player/Movement"
 local Combat = require "main/objects/player/Combat"
+local function_registry = require "main.function_registry"
+
 
 function init(self)
     msg.post(".", "acquire_input_focus")
+    --Init function_registry
+    self.attack = nil -- Función personalizada
+    --child url
+    self.class_url = msg.url(self.child_class_url) -- Referencia al script de la clase (Barbarian)
+    
     -- Atributos básicos del jugador
     self.health = 100               -- Salud actual del jugador
     self.max_health = 100           -- Salud máxima del jugador
@@ -39,19 +47,49 @@ function init(self)
 
     
     self.inputs_released = { left = true, right = true, up = true, down = true } -- check if input is released
+
+     -- Notifica a los scripts hijos para que puedan sobrescribir
+     msg.post(self.class_url, "init_player_vars")
     
+end
+
+function attack(self)
+    -- Obtén el ID único del jugador
+    local player_id = tostring(go.get_id())
+    local custom_attack = function_registry.get(player_id, "attack")
+    if custom_attack then
+        custom_attack() -- Llama a la función personalizada
+    else
+        print("El ataque predeterminado del jugador")
+    end
 end
 
 function update(self, dt)
     Movement.move(self, dt)
-
     Combat.cooldown(self, dt)
-end
 
+    -- Delegar lógica específica de la clase
+    msg.post(self.class_url, "update", { dt = dt })
+    
+end
 
 
 function on_input(self, action_id, action)
     Movement.handle_input(self, action_id, action, Animation)
+    --Override attack
+    if action_id == hash("attack") then
+        attack(self) -- Llama a la función, que puede haber sido sobrescrita
+    end
+end
+
+function on_message(self, message_id, message, sender)
+    --Set child class variables
+    if message_id == hash("set_player_vars") then
+        for k, v in pairs(message) do
+            self[k] = v
+        end
+    end
+    
 end
 
 
