@@ -3,6 +3,14 @@ instances {
   id: "Player"
   prototype: "/main/objects/player/Player.go"
   children: "Barbarian"
+  component_properties {
+    id: "Player"
+    properties {
+      id: "child_class_url"
+      value: "/Barbarian/Barbarian"
+      type: PROPERTY_TYPE_HASH
+    }
+  }
 }
 scale_along_z: 0
 embedded_instances {

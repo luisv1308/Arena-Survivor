@@ -25,6 +25,11 @@ function init(self)
     self.attack_power = 10          -- Poder de ataque (daño que inflige)
     self.attack_speed = 1           -- Velocidad de ataque (segundos entre ataques)
     self.attack_range = 30          -- Rango de ataque (distancia máxima)
+    self.attack_cooldown = 1        -- Tiempo de recuperación tras atacar (en segundos)
+    self.last_attack_time = 0       -- Última vez que atacó, para gestionar el cooldown
+    self.attacking = false          -- Estado de ataque (verdadero si se encuentra atacando)
+    
+    -- Atributos de defensa
     
     -- Atributos de movimiento
     self.base_speed = 100           -- Velocidad base de movimiento
@@ -53,26 +58,25 @@ function init(self)
     
 end
 
-function attack(self)
-    -- Obtén el ID único del jugador
-    local player_id = tostring(go.get_id())
-    local custom_attack = function_registry.get(player_id, "attack")
-    if custom_attack then
-        custom_attack() -- Llama a la función personalizada
-    else
-        print("El ataque predeterminado del jugador")
-    end
-end
-
 function update(self, dt)
     Movement.move(self, dt)
-    Combat.cooldown(self, dt)
-
+    --Combat.attack_cooldown(self, dt)
+    Combat.damage_cooldown(self, dt)
+    -- getting player properties to send to child
+    local player_vars = setting_player_vars(self, dt)
     -- Delegar lógica específica de la clase
-    msg.post(self.class_url, "update", { dt = dt })
+    msg.post(self.class_url, "update", player_vars)
     
 end
 
+function setting_player_vars(self, dt)
+    return { 
+        dt = dt,
+        attack_cooldown = self.attack_cooldown,
+        attacking = self.attacking,
+        last_attack_time = self.last_attack_time
+    }
+end
 
 function on_input(self, action_id, action)
     Movement.handle_input(self, action_id, action, Animation)
@@ -89,8 +93,32 @@ function on_message(self, message_id, message, sender)
             self[k] = v
         end
     end
+    --Catching messages from children
+    if message_id == hash("attack_cooldown") then
+        self.attack_cooldown = message.attack_cooldown
+        self.attacking = message.attacking
+        self.last_attack_time = message.last_attack_time
+        --check if is attacking
+        if self.attacking then
+            self.state = "attacking"
+            Animation.play_animation(self, "attack_right")
+        else
+            self.state = "idle"
+            Animation.play_animation(self, "idle")
+        end
+    end
     
 end
 
+function attack(self)
+    -- Obtén el ID único del jugador
+    local player_id = tostring(go.get_id())
+    local custom_attack = function_registry.get(player_id, "attackssss")
+    if custom_attack then
+        custom_attack() -- Llama a la función personalizada
+    else
+        print("El ataque predeterminado del jugador")
+    end
+end
 
 
