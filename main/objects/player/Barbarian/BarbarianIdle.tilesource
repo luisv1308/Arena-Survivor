@@ -24,7 +24,7 @@ animations {
   id: "attack_right"
   start_tile: 87
   end_tile: 91
-  fps: 4
+  fps: 6
 }
 animations {
   id: "attack_up_left"

@@ -7,8 +7,8 @@ collection_instances {
   id: "Barbarian"
   collection: "/main/objects/player/Barbarian/Barbarian.collection"
   position {
-    x: 510.0
-    y: 365.0
+    x: 221.0
+    y: 171.0
   }
 }
 scale_along_z: 0

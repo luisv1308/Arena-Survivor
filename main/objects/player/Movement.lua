@@ -6,14 +6,18 @@ local input_up = hash("up")
 local input_down = hash("down")
 
 function M.move(self, dt)
-    if self.moving then
+    if self.moving and not self.attacking then
         local pos = go.get_position()
         pos = pos + self.dir * self.base_speed  * dt  -- Mueve al jugador en la dirección especificada
         go.set_position(pos)
+        print("pos", self.dir.x, self.dir.y)
     end
 end
 
 function M.handle_input(self, action_id, action, Animation)
+    if self.attacking then
+        return
+    end
     -- Controlar direcciones de movimiento
     if action_id == input_left then
         if action.pressed then
@@ -105,6 +109,13 @@ function M.handle_input(self, action_id, action, Animation)
             Animation.play_animation(self, "idle_left")
         end
     end    -- Controlar direcciones de movimiento
+end
+
+function M.set_all_movement_properties_to_zero(self)
+    self.moving = false
+    self.dir = vmath.vector3(0, 0, 0)
+    self.player_face_dir = vmath.vector3(0, 0, 0)
+    self.inputs_released = { up = true, down = true, left = true, right = true }
 end
 
 return M

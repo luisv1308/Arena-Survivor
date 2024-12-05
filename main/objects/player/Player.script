@@ -59,13 +59,19 @@ function init(self)
 end
 
 function update(self, dt)
-    Movement.move(self, dt)
+    if not self.attacking then
+        Movement.move(self, dt)        
+    end
+    if self.attacking then
+        set_all_movement_properties_to_zero(self)
+        attack_cooldown(self, dt)
+    end
     --Combat.attack_cooldown(self, dt)
-    Combat.damage_cooldown(self, dt)
+    --Combat.damage_cooldown(self, dt)
     -- getting player properties to send to child
     local player_vars = setting_player_vars(self, dt)
     -- Delegar lógica específica de la clase
-    msg.post(self.class_url, "update", player_vars)
+    --msg.post(self.class_url, "update", player_vars)
     
 end
 
@@ -79,11 +85,25 @@ function setting_player_vars(self, dt)
 end
 
 function on_input(self, action_id, action)
-    Movement.handle_input(self, action_id, action, Animation)
-    --Override attack
-    if action_id == hash("attack") then
-        attack(self) -- Llama a la función, que puede haber sido sobrescrita
+    if self.attacking then
+        set_all_movement_properties_to_zero(self)
     end
+    if not self.attacking then
+        Movement.handle_input(self, action_id, action, Animation)
+        --Override attack
+        if action_id == hash("attack") and action.pressed then
+            print("attack", self.attacking)
+            if not self.attacking then
+                print("attacking")
+                
+                self.last_attack_time = socket.gettime()
+                player_attack(self) -- Llama a la función para reproducir la animación
+                self.attacking = true
+            end
+        end
+    end
+    
+    
 end
 
 function on_message(self, message_id, message, sender)
@@ -92,33 +112,32 @@ function on_message(self, message_id, message, sender)
         for k, v in pairs(message) do
             self[k] = v
         end
-    end
-    --Catching messages from children
-    if message_id == hash("attack_cooldown") then
-        self.attack_cooldown = message.attack_cooldown
-        self.attacking = message.attacking
-        self.last_attack_time = message.last_attack_time
-        --check if is attacking
-        if self.attacking then
-            self.state = "attacking"
-            Animation.play_animation(self, "attack_right")
-        else
-            self.state = "idle"
-            Animation.play_animation(self, "idle")
-        end
-    end
-    
-end
-
-function attack(self)
-    -- Obtén el ID único del jugador
-    local player_id = tostring(go.get_id())
-    local custom_attack = function_registry.get(player_id, "attackssss")
-    if custom_attack then
-        custom_attack() -- Llama a la función personalizada
-    else
-        print("El ataque predeterminado del jugador")
+    end    
+    print(message_id, tostring(message.id))
+    --check if message.id contains attack words
+    if message_id == hash("complete_animation") and message.id == hash("attack_right") then
+        --self.attacking = false
+        print("Ataque completado!")
     end
 end
 
+function player_attack(self)
+    print("player attack")
+    Animation.play_animation(self, "attack_right")
+end
 
+function attack_cooldown(self, dt)
+    local current_time = socket.gettime()
+    -- Ejemplo de gestión de estado "attack cooldown"
+    if self.attacking and current_time - self.last_attack_time >= self.attack_cooldown then
+        self.attacking = false
+        self.last_attack_time = current_time
+    end
+end
+
+function set_all_movement_properties_to_zero(self)
+    self.moving = false
+    self.dir = vmath.vector3(0, 0, 0)
+    self.player_face_dir = vmath.vector3(0, 0, 0)
+    self.inputs_released = { up = true, down = true, left = true, right = true }
+end

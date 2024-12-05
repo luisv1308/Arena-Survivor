@@ -11,7 +11,7 @@ function init(self)
     self.player_id = tostring(go.get_id("Player")) -- ID del padre (Player)
 
     -- Registra la función personalizada
-    function_registry.register(self.player_id, "attack", attack)
+    function_registry.register(self.player_id, "attack", barbarian_attack)
 	-- Set properties
 	set_properties(self)
 end
@@ -31,9 +31,7 @@ function update(self, dt)
 end
 
 function custom_update(self, dt, properties)
-	-- Lógica específica del Barbarian
-   Combat.attack_cooldown(properties, dt)
-   Combat.damage_cooldown(self, dt)
+	
 end
 
 function fixed_update(self, dt)
@@ -101,12 +99,12 @@ function set_properties(self)
     self.attack_power = 10          -- Poder de ataque (daño que inflige)
     self.attack_speed = 1           -- Velocidad de ataque (segundos entre ataques)
     self.attack_range = 30          -- Rango de ataque (distancia máxima)
-    self.attack_cooldown = 5        -- Tiempo de recuperación tras atacar (en segundos)
+    self.attack_cooldown = 1        -- Tiempo de recuperación tras atacar (en segundos)
 	self.attacking = false          -- Estado de ataque (verdadero si se encuentra atacando)
    
 end
 
-function attack(self)
+function barbarian_attack(self)
 	local properties = {
 		attack_cooldown = self.attack_cooldown,
 		attacking = self.attacking,
