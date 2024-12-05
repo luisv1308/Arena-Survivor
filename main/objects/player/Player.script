@@ -6,6 +6,7 @@ local Animation = require "main/objects/player/Animation"
 local Movement = require "main/objects/player/Movement"
 local Combat = require "main/objects/player/Combat"
 local function_registry = require "main.function_registry"
+local StateMachine = require "main.state_machine"
 
 
 function init(self)
@@ -52,20 +53,43 @@ function init(self)
 
     
     self.inputs_released = { left = true, right = true, up = true, down = true } -- check if input is released
+    self.move_keys = {
+        [hash("up")] = true,
+        [hash("down")] = true,
+        [hash("left")] = true,
+        [hash("right")] = true
+    }
+    --table for 8 attacks 
+    self.attack_keys = {
+        [hash("attack_left")] = true,
+        [hash("attack_right")] = true,
+        [hash("attack_up")] = true,
+        [hash("attack_down")] = true,
+        [hash("attack_up_left")] = true,
+        [hash("attack_up_right")] = true,
+        [hash("attack_down_left")] = true,
+        [hash("attack_down_right")] = true
+    }
+    self.pressed_keys = {}
 
-     -- Notifica a los scripts hijos para que puedan sobrescribir
-     msg.post(self.class_url, "init_player_vars")
+    --Init state machine
+    init_state_machine(self)
+    -- Notifica a los scripts hijos para que puedan sobrescribir
+    msg.post(self.class_url, "init_player_vars")
     
 end
 
 function update(self, dt)
-    if not self.attacking then
-        Movement.move(self, dt)        
-    end
-    if self.attacking then
-        set_all_movement_properties_to_zero(self)
-        attack_cooldown(self, dt)
-    end
+    self.sm:update(dt)
+    -- if not self.attacking then
+    --     Movement.move(self, dt)
+    --     print("not attacking")
+    -- end
+    -- if self.attacking then
+    --     set_all_movement_properties_to_zero(self)
+    --     attack_cooldown(self, dt)
+    --     print("attacking")
+    -- end
     --Combat.attack_cooldown(self, dt)
     --Combat.damage_cooldown(self, dt)
     -- getting player properties to send to child
@@ -85,25 +109,33 @@ function setting_player_vars(self, dt)
 end
 
 function on_input(self, action_id, action)
-    if self.attacking then
-        set_all_movement_properties_to_zero(self)
+    self.input_queue = self.input_queue or {}
+    table.insert(self.input_queue, { action_id = action_id, action = action })
+    -- Ignorar entrada si está atacando
+    if self.sm:get_state() == "attacking" then
+        return
     end
-    if not self.attacking then
-        Movement.handle_input(self, action_id, action, Animation)
-        --Override attack
-        if action_id == hash("attack") and action.pressed then
-            print("attack", self.attacking)
-            if not self.attacking then
-                print("attacking")
-                
-                self.last_attack_time = socket.gettime()
-                player_attack(self) -- Llama a la función para reproducir la animación
-                self.attacking = true
-            end
+    --detecting if player is attacking
+    if action_id == hash("attack") and action.pressed then
+        self.sm:set_state("attacking")
+    
+    end
+
+    if self.sm:get_state() ~= "attacking" then
+        for key, value in pairs(self.move_keys) do
+            --print(key, value)
+        end
+        -- Procesar input de movimiento
+        --detecting if player is moving
+        if self.move_keys[action_id] and action.pressed then
+            self.pressed_keys[action_id] = true
+            self.sm:set_state("walking")
+        elseif self.move_keys[action_id] and action.released then
+            print("released")
+            self.pressed_keys[action_id] = false
+            --self.sm:set_state("idle")
         end
     end
-    
-    
 end
 
 function on_message(self, message_id, message, sender)
@@ -113,11 +145,16 @@ function on_message(self, message_id, message, sender)
             self[k] = v
         end
     end    
-    print(message_id, tostring(message.id))
+    --print(message_id, tostring(message.id))
     --check if message.id contains attack words
     if message_id == hash("complete_animation") and message.id == hash("attack_right") then
         --self.attacking = false
         print("Ataque completado!")
+    end
+    --check state_machine 
+    if message_id == hash("change_state") then
+        print("Changing state to " .. message.id)
+        self.sm:set_state(message.id)
     end
 end
 
@@ -132,6 +169,7 @@ function attack_cooldown(self, dt)
     if self.attacking and current_time - self.last_attack_time >= self.attack_cooldown then
         self.attacking = false
         self.last_attack_time = current_time
+        print("Attack cooldown finished")
     end
 end
 
@@ -140,4 +178,118 @@ function set_all_movement_properties_to_zero(self)
     self.dir = vmath.vector3(0, 0, 0)
     self.player_face_dir = vmath.vector3(0, 0, 0)
     self.inputs_released = { up = true, down = true, left = true, right = true }
+end
+
+function init_state_machine(self)
+    --create states
+    self.sm = StateMachine.new()
+
+    self.sm:add_state("idle", {
+        enter = function()
+            print("idle")
+            if self.player_face_dir.x > 0 then
+                Animation.play_animation(self, "idle")
+            else
+                Animation.play_animation(self, "idle_left")
+            end
+            
+        end,
+        update = function(dt) 
+            if self.input_queue then
+                self.sm:set_state("walking")
+            else
+                self.sm:set_state("idle")
+            end
+        end,
+        exit = function()
+            print("idle exit")
+            
+        end
+    })
+
+    self.sm:add_state("walking", {
+        enter = function()
+            print("walking")
+            if self.input_queue then
+                for _, input in ipairs(self.input_queue) do
+                    Movement.handle_input(self, input.action_id, input.action, Animation)
+                end
+                self.input_queue = {}
+            end
+        end,
+        update = function(dt)
+            Movement.move(self, dt)
+            if self.input_queue then
+                for _, input in ipairs(self.input_queue) do
+                    Movement.handle_input(self, input.action_id, input.action, Animation)
+                end
+                self.input_queue = {}
+            end
+        end,
+        exit = function()
+            print("walking exit")
+            
+        end
+    })
+
+    self.sm:add_state("attacking", {
+        enter = function()
+            print("Entering attacking state")
+            -- Si hay movimiento, cambiar la dirección y la animación
+            local size_vector = vmath.length(self.input)
+            if size_vector > 0 then
+                
+                self.dir = vmath.normalize(self.input)  -- Normalizamos el vector de dirección
+
+                -- Cambiar la animación de acuerdo con la dirección y checa si va izquierda o derecha
+                if self.dir.y > 0 and self.player_face_dir.x > 0 then
+                    --print("walk_up_right")
+                    Animation.play_animation(self, "attack_up_right")
+                elseif self.dir.y > 0 and self.player_face_dir.x < 0 then
+                    --print("walk_up_left")
+                    Animation.play_animation(self, "attack_up_left")
+                elseif self.dir.y < 0 and self.player_face_dir.x > 0 then
+                    --print("walk_down_right")
+                    Animation.play_animation(self, "attack_down_right")
+                elseif self.dir.y < 0 and self.player_face_dir.x < 0 then
+                    --print("walk_down_left")
+                    Animation.play_animation(self, "attack_down_left")
+                elseif self.dir.x > 0 then
+                    --print("walk_right")
+                    Animation.play_animation(self, "attack_right")
+                elseif self.dir.x < 0 then
+                    --print("walk_left")
+                    Animation.play_animation(self, "attack_left")
+                end
+            else
+                if self.player_face_dir.x > 0 then
+                    Animation.play_animation(self, "attack_right")
+                else
+                    Animation.play_animation(self, "attack_left")
+                end
+            end            
+            -- Desactivar movimiento mientras ataca
+            --self.base_speed = 0
+            
+            -- Configurar un temporizador para salir del estado de ataque
+            self.attack_timer = 1 -- Duración del ataque en segundos
+        end,
+        update = function(dt)
+            -- Reducir el tiempo restante en el estado de ataque
+            self.attack_timer = self.attack_timer - dt
+            if self.attack_timer <= 0 then
+                print("Updating attacking state")
+                -- Volver a idle o caminar dependiendo de las teclas presionadas
+                --Animation.play_animation(self, "idle")
+                self.sm:set_state("walking")
+            end
+        end,
+        exit = function()
+            print("Exiting attacking state")
+        end
+    })
+    
+
+    self.sm:set_state("idle")
+    
 end
