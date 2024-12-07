@@ -12,4 +12,7 @@ embedded_components {
   "  texture: \"/main/objects/player/Barbarian/BarbarianIdle.tilesource\"\n"
   "}\n"
   ""
+  position {
+    y: -1.0
+  }
 }

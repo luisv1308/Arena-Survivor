@@ -18,7 +18,3 @@ key_trigger {
   input: KEY_SPACE
   action: "attack"
 }
-mouse_trigger {
-  input: MOUSE_BUTTON_1
-  action: "attack"
-}
