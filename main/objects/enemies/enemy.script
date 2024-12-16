@@ -1,0 +1,38 @@
+local Goblin = require "main/objects/enemies/goblin"
+local Dwarf = require "main/objects/enemies/dwarf"
+
+function init(self)
+	-- Determinar el tipo de enemigo desde un mensaje o variable
+	local enemy_type = self.enemy_type or "goblin" -- Por defecto, un goblin
+
+	if enemy_type == "goblin" then
+		self.enemy = Goblin:new()
+	elseif enemy_type == "dwarf" then
+		self.enemy = Dwarf:new()
+	end
+
+	-- Configurar atributos iniciales
+	print(self.enemy.name .. " spawned with " .. self.enemy.health .. " health.")
+end
+
+function update(self, dt)
+	-- Aquí puedes agregar lógica de movimiento, IA, etc.
+end
+
+function on_message(self, message_id, message, sender)
+    if message_id == hash("set_enemy_type") then
+        if message.type == "goblin" then
+            self.enemy = Goblin:new()
+        elseif message.type == "dwarf" then
+            self.enemy = Dwarf:new()
+        end
+        print(self.enemy.name .. " spawned with " .. self.enemy.health .. " health.")
+    elseif message_id == hash("take_damage") then
+        self.enemy:take_damage(message.amount)
+    end
+    if message_id == hash("damage_taken") and self.health <= 0 then
+        msg.post("/wave_manager", "enemy_destroyed") -- Notificar al wave_manager
+        go.delete() -- Destruir al enemigo
+    end
+end
+

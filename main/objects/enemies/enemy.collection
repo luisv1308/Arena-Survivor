@@ -1,0 +1,21 @@
+name: "enemy"
+scale_along_z: 0
+embedded_instances {
+  id: "enemy"
+  data: "components {\n"
+  "  id: \"enemy\"\n"
+  "  component: \"/main/objects/enemies/enemy.script\"\n"
+  "}\n"
+  "embedded_components {\n"
+  "  id: \"sprite\"\n"
+  "  type: \"sprite\"\n"
+  "  data: \"default_animation: \\\"walk\\\"\\n"
+  "material: \\\"/builtins/materials/sprite.material\\\"\\n"
+  "textures {\\n"
+  "  sampler: \\\"texture_sampler\\\"\\n"
+  "  texture: \\\"/main/objects/enemies/goblin.tilesource\\\"\\n"
+  "}\\n"
+  "\"\n"
+  "}\n"
+  ""
+}

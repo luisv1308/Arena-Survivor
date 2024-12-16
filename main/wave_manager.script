@@ -1,0 +1,64 @@
+local wave_data = {
+	current_wave = 1,     -- Número de la oleada actual
+	enemies_per_wave = 5, -- Enemigos por oleada inicial
+	spawn_interval = 1.0, -- Tiempo entre cada aparición de enemigo
+	wave_interval = 5.0,  -- Tiempo entre oleadas
+	difficulty_scale = 1.2 -- Escalado de dificultad (opcional)
+}
+
+local active_enemies = 0  -- Contador de enemigos activos
+
+-- Referencia al enemy_factory
+local enemy_factory_url = "/enemies#enemy_factory"
+
+-- Generar un enemigo en una posición aleatoria
+local function spawn_enemy()
+	local x = math.random(550, 680) -- Coordenadas X aleatorias (ajusta según tu juego)
+	local y = math.random(394, 500) -- Coordenadas Y aleatorias
+	local position = vmath.vector3(x, y, 0)
+
+	-- Crear enemigo desde el factory
+	local enemy = collectionfactory.create(enemy_factory_url, position)
+	active_enemies = active_enemies + 1 -- Incrementar el contador de enemigos activos
+
+	-- Escuchar cuando el enemigo sea destruido
+	msg.post(enemy[hash("/enemy")], "set_enemy_type", { type = "goblin" })
+end
+
+-- Iniciar una oleada
+local function start_wave()
+	print("Starting wave:", wave_data.current_wave)
+	for i = 1, wave_data.enemies_per_wave do
+		timer.delay(wave_data.spawn_interval * i, false, function()
+			spawn_enemy()
+		end)
+	end
+end
+
+-- Verificar si la oleada ha terminado
+local function check_wave_end()
+	if active_enemies <= 0 then
+		print("Wave complete!")
+		wave_data.current_wave = wave_data.current_wave + 1 -- Siguiente oleada
+		wave_data.enemies_per_wave = math.ceil(wave_data.enemies_per_wave * wave_data.difficulty_scale) -- Aumentar enemigos
+		timer.delay(wave_data.wave_interval, false, start_wave) -- Esperar antes de iniciar la siguiente oleada
+	end
+end
+
+-- Cuando un enemigo es destruido
+local function on_enemy_destroyed()
+	active_enemies = active_enemies - 1
+	check_wave_end()
+end
+
+function init(self)
+	-- Escuchar mensajes de enemigos destruidos
+	msg.post(".", "acquire_input_focus")
+	start_wave()
+end
+
+function on_message(self, message_id, message, sender)
+	if message_id == hash("enemy_destroyed") then
+		on_enemy_destroyed()
+	end
+end

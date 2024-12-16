@@ -3,15 +3,21 @@ tile_width: 32
 tile_height: 32
 collision_groups: "default"
 animations {
-  id: "attack_down_left"
-  start_tile: 107
-  end_tile: 111
+  id: "attack"
+  start_tile: 87
+  end_tile: 91
+  fps: 6
+}
+animations {
+  id: "attack_down"
+  start_tile: 87
+  end_tile: 91
   fps: 4
 }
 animations {
-  id: "attack_down_right"
-  start_tile: 87
-  end_tile: 91
+  id: "attack_down_left"
+  start_tile: 107
+  end_tile: 111
   fps: 4
 }
 animations {
@@ -21,21 +27,15 @@ animations {
   fps: 4
 }
 animations {
-  id: "attack_right"
-  start_tile: 87
-  end_tile: 91
-  fps: 6
+  id: "attack_up"
+  start_tile: 127
+  end_tile: 131
+  fps: 4
 }
 animations {
   id: "attack_up_left"
   start_tile: 147
   end_tile: 151
-  fps: 4
-}
-animations {
-  id: "attack_up_right"
-  start_tile: 127
-  end_tile: 131
   fps: 4
 }
 animations {

@@ -1,0 +1,47 @@
+-- enemy_manager.script
+
+-- Tamaño de la pantalla (ajusta según tu resolución)
+local screen_width = 1280
+local screen_height = 800
+
+-- Generar posición aleatoria dentro de la pantalla
+local function random_screen_position()
+	local x = math.random(550, 680)
+	local y = math.random(394, 500)
+	return vmath.vector3(x, y, 0)
+end
+
+-- Generar un enemigo
+local function spawn_enemy(self, enemy_type)
+	print("Spawning enemy: " .. enemy_type)
+	local position = random_screen_position()
+	local enemy_instances = collectionfactory.create("#enemy_factory", position)
+	local enemy_url = enemy_instances[hash("/enemy")]
+
+	-- Configurar tipo de enemigo
+	msg.post(enemy_url, "set_enemy_type", { type = enemy_type })
+
+	-- Agregar a la lista de enemigos activos
+	table.insert(self.active_enemies, { url = enemy_url, type = enemy_type })
+end
+
+function init(self)
+	-- Lista de enemigos activos
+	self.active_enemies = {}
+
+	-- Generar enemigos para pruebas
+	for i = 1, 10 do
+		spawn_enemy(self, "goblin")
+	end
+end
+
+function update(self, dt)
+	-- Aquí puedes manejar la lógica de los enemigos activos (por ejemplo, eliminar enemigos fuera de la pantalla)
+end
+
+function on_message(self, message_id, message, sender)
+	if message_id == hash("spawn_enemy") then
+		-- Spawnear un enemigo cuando se reciba un mensaje
+		spawn_enemy(self, message.type)
+	end
+end

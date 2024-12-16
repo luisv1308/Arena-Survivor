@@ -1,0 +1,12 @@
+image: "/assets/Minifantasy_Creatures_v3.2_Commercial_Version/Minifantasy_Creatures_v3.2_Commercial_Version/Minifantasy_Creatures_Assets/Base_Humanoids/Goblin/Full_Goblin.png"
+tile_width: 32
+tile_height: 32
+collision_groups: "default"
+animations {
+  id: "walk"
+  start_tile: 1
+  end_tile: 1
+  playback: PLAYBACK_LOOP_FORWARD
+  fps: 5
+}
+extrude_borders: 2

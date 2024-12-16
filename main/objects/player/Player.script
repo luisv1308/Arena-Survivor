@@ -206,7 +206,9 @@ function init_state_machine(self)
 
     self.sm:add_state("idle", {
         enter = function()
-            print("idle")
+            --print("current position", go.get_position())
+
+            --print("idle")
             if self.player_face_dir.x > 0 then
                 Animation.play_animation(self, "idle")
             else
@@ -255,43 +257,45 @@ function init_state_machine(self)
     self.sm:add_state("attacking", {
         enter = function()
             print("Entering attacking state")
+    
             -- Si hay movimiento, cambiar la dirección y la animación
             local size_vector = vmath.length(self.input)
             if size_vector > 0 then
-                
-                self.dir = vmath.normalize(self.input)  -- Normalizamos el vector de dirección
-
-                -- Cambiar la animación de acuerdo con la dirección y checa si va izquierda o derecha
-                if self.dir.y > 0 and self.player_face_dir.x > 0 then
-                    --print("walk_up_right")
-                    Animation.play_animation(self, "attack_up_right")
-                elseif self.dir.y > 0 and self.player_face_dir.x < 0 then
-                    --print("walk_up_left")
-                    Animation.play_animation(self, "attack_up_left")
-                elseif self.dir.y < 0 and self.player_face_dir.x > 0 then
-                    --print("walk_down_right")
-                    Animation.play_animation(self, "attack_down_right")
-                elseif self.dir.y < 0 and self.player_face_dir.x < 0 then
-                    --print("walk_down_left")
-                    Animation.play_animation(self, "attack_down_left")
-                elseif self.dir.x > 0 then
-                    --print("walk_right")
-                    Animation.play_animation(self, "attack_right")
+                self.dir = vmath.normalize(self.input) -- Normalizamos el vector de dirección
+    
+                -- Determinar si el personaje mira a la izquierda o derecha
+                if self.dir.x > 0 then
+                    go.set_rotation(vmath.quat(), "#sprite") -- Orientación normal (mirando a la derecha)
+                    self.player_face_dir.x = 1
                 elseif self.dir.x < 0 then
-                    --print("walk_left")
-                    Animation.play_animation(self, "attack_left")
+                    go.set_rotation(vmath.quat_rotation_y(math.pi), "#sprite") -- Reflejar horizontalmente (mirando a la izquierda)
+                    self.player_face_dir.x = -1
+                end
+    
+                -- Cambiar animación de ataque según dirección vertical
+                if self.dir.y > 0 then
+                    Animation.play_animation(self, "attack_up")
+                elseif self.dir.y < 0 then
+                    Animation.play_animation(self, "attack_down")
+                else
+                    Animation.play_animation(self, "attack") -- Animación neutral si no hay dirección vertical
                 end
             else
+                -- Sin movimiento: usar dirección actual para reflejar el sprite
                 if self.player_face_dir.x > 0 then
-                    Animation.play_animation(self, "attack_right")
+                    go.set_rotation(vmath.quat(), "#sprite")
                 else
-                    Animation.play_animation(self, "attack_left")
+                    go.set_rotation(vmath.quat_rotation_y(math.pi), "#sprite")
                 end
-            end            
+    
+                -- Animación neutral de ataque
+                Animation.play_animation(self, "attack")
+            end
+    
             -- Desactivar movimiento mientras ataca
-            --self.base_speed = 0
+            -- self.base_speed = 0
             print(msg.url("Barbarian#attackcollision")) -- Verifica si es la URL correcta
-
+    
             -- Configurar un temporizador para salir del estado de ataque
             self.attack_timer = 1 -- Duración del ataque en segundos
             msg.post("Barbarian#attackcollision", "enable") -- Habilitar el collisionobject del ataque
