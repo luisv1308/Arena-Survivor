@@ -26,5 +26,5 @@ default_texture_mag_filter = nearest
 subpixels = 0
 
 [physics]
-debug = 1
+debug = 0
 

@@ -4,16 +4,7 @@ function init(self)
 	-- Remove this function if not needed
 	msg.post("@render:", "use_fixed_projection", { zoom = 4 })
 
-	-- Crear un goblin
-    local goblin_instances = collectionfactory.create("/enemies#enemy_factory", vmath.vector3(100, 100, 0))
-	-- Obtener la URL del Game Object principal
-	local goblin_url = goblin_instances[hash("/enemy")]
-    msg.post(goblin_url, "set_enemy_type", { type = "goblin" })
-
-    -- Crear un dwarf
-    local dwarf_instances = collectionfactory.create("/enemies#enemy_factory", vmath.vector3(200, 200, 0))
-    local dwarf_url = dwarf_instances[hash("/enemy")]
-    msg.post(dwarf_url, "set_enemy_type", { type = "dwarf" })
+	
 	
 end
 

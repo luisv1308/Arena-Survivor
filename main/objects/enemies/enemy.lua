@@ -1,6 +1,7 @@
 local Enemy = {}
 
 function Enemy:new(name, health, speed)
+    print(id)
     local instance = {
         name = name or "Unnamed Enemy",
         health = health or 100,

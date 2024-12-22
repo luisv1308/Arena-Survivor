@@ -1,7 +1,16 @@
+local wave_manager = null
+
 local Goblin = require "main/objects/enemies/goblin"
 local Dwarf = require "main/objects/enemies/dwarf"
 
+local player = nil  -- Variable para almacenar la referencia al jugador
+
 function init(self)
+    wave_manager = go.get_id("/wave_manager") 
+
+    -- Obtener la referencia del jugador (usualmente con `go.get_id` o algún otro método de Defold)
+	player = go.get_id("/Barbarian/Player")  -- Cambia "/player" por la ruta correcta del jugador en tu escena
+
 	-- Determinar el tipo de enemigo desde un mensaje o variable
 	local enemy_type = self.enemy_type or "goblin" -- Por defecto, un goblin
 
@@ -11,27 +20,81 @@ function init(self)
 		self.enemy = Dwarf:new()
 	end
 
+    -- Agregar este enemigo a la lista del enemy_manager
+    msg.post(wave_manager, "add_enemy", { enemy_url = self.url })
+
+    -- Agregar todos los enemigos activos a la lista de enemigos activos
 	-- Configurar atributos iniciales
 	print(self.enemy.name .. " spawned with " .. self.enemy.health .. " health.")
 end
 
 function update(self, dt)
-	-- Aquí puedes agregar lógica de movimiento, IA, etc.
+    -- Si el jugador existe
+    if player and self.url then
+        local player_pos = go.get_position(player)
+        local enemy_pos = go.get_position(self.url)
+
+        -- Calcular la dirección hacia el jugador
+        local direction = player_pos - enemy_pos
+        local distance = vmath.length(direction)
+
+        -- Normalizar la dirección
+        if distance > 0 then
+            direction = vmath.normalize(direction)
+        end
+
+        -- Mover al enemigo
+        local speed = self.enemy.speed  -- Usa la velocidad definida para el enemigo
+        local move_vector = direction * speed * dt
+
+        -- Comprobar la distancia entre este enemigo y los otros enemigos
+        local enemies = msg.post(wave_manager, "get_active_enemies")
+        if enemies then
+            for _, other_enemy_url in ipairs(enemies) do
+                if other_enemy_url ~= self.url then
+                    local other_enemy_pos = go.get_position(other_enemy_url)
+                    local separation_distance = vmath.length(other_enemy_pos - enemy_pos)
+
+                    -- Si está demasiado cerca, aplica una corrección
+                    if separation_distance < 30 then  -- Ajusta este valor de distancia mínima
+                        move_vector = move_vector + vmath.normalize(enemy_pos - other_enemy_pos) * 10
+                    end
+                end
+            end
+        end
+
+        -- Actualizamos la posición
+        go.set_position(enemy_pos + move_vector, self.id)
+
+        -- Si el enemigo está cerca del jugador, atacar
+        if distance < 50 then
+            self.enemy:attack()
+        end
+    end
 end
 
+
+
 function on_message(self, message_id, message, sender)
-    if message_id == hash("set_enemy_type") then
+    if message_id == hash("set_enemy_type_x") then
+        -- Solo asignamos el tipo si aun no hemos creado al enemigo
         if message.type == "goblin" then
             self.enemy = Goblin:new()
+            self.url = message.url
         elseif message.type == "dwarf" then
             self.enemy = Dwarf:new()
+            self.url = message.url
         end
         print(self.enemy.name .. " spawned with " .. self.enemy.health .. " health.")
+        
     elseif message_id == hash("take_damage") then
-        self.enemy:take_damage(message.amount)
+        if self.enemy then
+            self.enemy:take_damage(message.amount)
+        end
     end
     if message_id == hash("damage_taken") and self.health <= 0 then
         msg.post("/wave_manager", "enemy_destroyed") -- Notificar al wave_manager
+        msg.post(wave_manager, "remove_enemy", { enemy_url = self.url })  -- Eliminar del enemy_manager
         go.delete() -- Destruir al enemigo
     end
 end

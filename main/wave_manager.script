@@ -7,7 +7,8 @@ local wave_data = {
 }
 
 local active_enemies = 0  -- Contador de enemigos activos
-
+-- Lista global de enemigos activos
+local active_enemies_list = {}
 -- Referencia al enemy_factory
 local enemy_factory_url = "/enemies#enemy_factory"
 
@@ -20,9 +21,10 @@ local function spawn_enemy()
 	-- Crear enemigo desde el factory
 	local enemy = collectionfactory.create(enemy_factory_url, position)
 	active_enemies = active_enemies + 1 -- Incrementar el contador de enemigos activos
-
 	-- Escuchar cuando el enemigo sea destruido
-	msg.post(enemy[hash("/enemy")], "set_enemy_type", { type = "goblin" })
+	msg.post(enemy[hash("/enemy")], "set_enemy_type_x", { type = "goblin", url = msg.url(enemy[hash("/enemy")]) })
+	-- Agregar a la lista de enemigos activos
+	--table.insert(active_enemies_list, { url = enemy[hash("/enemy")], type = "goblin" })
 end
 
 -- Iniciar una oleada
@@ -51,6 +53,30 @@ local function on_enemy_destroyed()
 	check_wave_end()
 end
 
+-- Agregar un enemigo a la lista
+function add_enemy(enemy_url)
+    table.insert(active_enemies_list, enemy_url)
+end
+-- Eliminar un enemigo de la lista
+function remove_enemy(enemy_url)
+    for i, url in ipairs(active_enemies_list) do
+        if url == enemy_url then
+            table.remove(active_enemies_list, i)
+            break
+        end
+    end
+end
+
+-- Obtener todos los enemigos activos
+function get_active_enemies()
+    return active_enemies_list
+end
+
+-- Función para limpiar la lista de enemigos (opcional)
+function clear_enemies()
+    active_enemies_list = {}
+end
+
 function init(self)
 	-- Escuchar mensajes de enemigos destruidos
 	msg.post(".", "acquire_input_focus")
@@ -61,4 +87,12 @@ function on_message(self, message_id, message, sender)
 	if message_id == hash("enemy_destroyed") then
 		on_enemy_destroyed()
 	end
+	if message_id == hash("add_enemy") then
+        add_enemy(message.enemy_url)
+    elseif message_id == hash("remove_enemy") then
+        remove_enemy(message.enemy_url)
+    elseif message_id == hash("get_active_enemies") then
+        -- Devuelve la lista de enemigos activos
+        msg.post(sender, "active_enemies", { enemies = active_enemies_list })
+    end
 end
