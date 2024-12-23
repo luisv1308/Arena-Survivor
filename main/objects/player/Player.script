@@ -311,6 +311,8 @@ function init_state_machine(self)
             end
         end,
         exit = function()
+            -- restaurar sprite rotacion a normal
+            go.set_rotation(vmath.quat(), "#sprite")
             print("Exiting attacking state")
             msg.post("Barbarian#attackcollision", "disable") -- Deshabilitar el collisionobject del ataque
         end
