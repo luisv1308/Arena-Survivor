@@ -157,25 +157,7 @@ function on_message(self, message_id, message, sender)
         self.sm:set_state(message.id)
     end
     --check collision
-    if message_id == hash("contact_point_response") then
-        if message_id == hash("contact_point_response") then
-            -- Identificar el grupo del objeto con el que se colisionó
-            if message.group == hash("enemy") then
-                print("Colisionaste con un enemigo!")
-                if not self.invulnerable then
-                    self.health = self.health - 10
-                    print("Salud restante: " .. self.health)
-                end
-            elseif message.group == hash("walls") then
-                print("Colisión con una pared")
-            elseif message.group == hash("attack") then
-                print("Ataque conectado con el objetivo!")
-                msg.post(sender, "take_damage", { damage = self.attack_power })
-            end
-            -- URL del otro objeto para más control
-            print("Objeto colisionado: " .. tostring(message.other_id))
-        end
-    end
+    
 end
 
 function player_attack(self)

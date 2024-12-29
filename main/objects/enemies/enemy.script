@@ -29,6 +29,18 @@ function init(self)
 end
 
 function update(self, dt)
+    -- Si usas física o quieres suavizar el empuje
+    if self.velocity then
+        local pos = go.get_position()
+        pos = pos + self.velocity * dt
+        go.set_position(pos)
+        
+        -- Reducir la velocidad gradualmente para simular fricción
+        self.velocity = self.velocity * 0.9
+        if vmath.length(self.velocity) < 0.1 then
+            self.velocity = nil -- Detener movimiento si la velocidad es muy baja
+        end
+    end
     -- Si el jugador existe
     if player and self.url then
         local player_pos = go.get_position(player)
@@ -68,7 +80,7 @@ function update(self, dt)
 
         -- Si el enemigo está cerca del jugador, atacar
         if distance < 50 then
-            self.enemy:attack()
+            --self.enemy:attack()
         end
     end
 end
@@ -90,6 +102,27 @@ function on_message(self, message_id, message, sender)
     elseif message_id == hash("take_damage") then
         if self.enemy then
             self.enemy:take_damage(message.amount)
+        end
+    end
+    if message_id == hash("apply_push") then
+        -- Aplicar el empuje al enemigo
+        local push_vector = message.direction * message.force
+        self.velocity = push_vector -- Asumiendo que tienes una variable `velocity`
+        
+        -- O mueve directamente si no usas física
+        local new_position = go.get_position() + push_vector * 0.1 -- Escalar por un pequeño factor
+        go.set_position(new_position)
+    end
+    if message_id == hash("contact_point_response") then
+        if message.group == hash("player_weapon") then
+            -- El enemigo recibe daño
+            if self.enemy then
+                self.enemy:take_damage(10) -- Ajusta el daño según sea necesario
+            end
+            print("Enemy took damage!***************************************************" .. self.enemy.health)
+        elseif message.group == hash("player_body") then
+            -- Colisión con el cuerpo del jugador (puedes manejar esto si es necesario)
+            print("Enemy collided with the player!")
         end
     end
     if message_id == hash("damage_taken") and self.health <= 0 then

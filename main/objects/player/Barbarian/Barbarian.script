@@ -71,6 +71,27 @@ function on_message(self, message_id, message, sender)
 		})
     end
 
+	--check collision
+    if message_id == hash("contact_point_response") then
+		local parent = go.get_id("Player")
+		if message.group == hash("enemy") then
+			print("Colisionaste con un enemigo!")
+			--[[ if not self.invulnerable then
+				self.health = self.health - 10
+				print("Salud restante: " .. self.health)
+			end ]]
+			
+			-- Calcular dirección de empuje
+			local player_pos = go.get_position() -- Posición del jugador
+
+			local enemy_pos = message.position -- Posición del enemigo (de la colisión)
+			local push_direction = vmath.normalize(enemy_pos - player_pos) -- Dirección hacia atrás
+			
+			-- Enviar mensaje al enemigo con la dirección y fuerza del empuje
+			msg.post(message.other_id, "apply_push", { direction = push_direction, force = 200 })
+		end
+    end
+
 end
 
 function on_input(self, action_id, action)

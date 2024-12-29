@@ -4,7 +4,7 @@ function Enemy:new(name, health, speed)
     print(id)
     local instance = {
         name = name or "Unnamed Enemy",
-        health = health or 100,
+        health = health or 20,
         speed = speed or 50,
         is_alive = true,
     }
@@ -13,10 +13,15 @@ function Enemy:new(name, health, speed)
 end
 
 function Enemy:take_damage(amount)
+    print(self.name .. " takes " .. amount .. " damage!xxxxxxxxxxxxxxxxxxxxxxxxxxccccccccccccccccccc")
     self.health = self.health - amount
     if self.health <= 0 then
         self.is_alive = false
         print(self.name .. " has been defeated!")
+        msg.post("/wave_manager", "enemy_destroyed")
+        msg.post("/wave_manager", "remove_enemy", { enemy_url = self.url })
+        go.delete()
+
     else
         print(self.name .. " took " .. amount .. " damage! Remaining health: " .. self.health)
     end
