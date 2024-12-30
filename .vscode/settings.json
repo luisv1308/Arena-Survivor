@@ -65,5 +65,8 @@
         "*.appmanifest": "yaml",
         "*.script_api": "yaml",
         "ext.manifest": "yaml"
-    }
+    },
+    "Lua.diagnostics.globals": [
+        "Barbarian"
+    ]
 }

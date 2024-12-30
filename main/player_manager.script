@@ -1,0 +1,43 @@
+-- player_manager.script
+
+local player_factory_url = "/player#player_factory"
+local player_url = nil
+
+function init(self)
+    -- Crea al jugador al inicio
+    local position = random_screen_position()
+    msg.post("#", "respawn_player", { position = position })
+
+    --self.player = factory.create(player_factory_url, position)
+end
+
+function on_message(self, message_id, message, sender)
+    if message_id == hash("respawn_player") then
+        -- Maneja la lógica de respawn del jugador
+        if self.player then
+            go.delete(self.player)
+        end
+        self.player = collectionfactory.create(player_factory_url, message.position)
+        player_url = msg.url(self.player[hash("/player")]) -- Guarda la URL completa del jugador
+        -- Notifica a los enemigos la URL del jugador
+        msg.post("/wave_manager", "player_created", { player_url = player_url })
+        -- Asigna el tipo de jugador
+        msg.post(self.player[hash("/player")], "set_player_type", { type = "barbarian", url = msg.url(self.player[hash("/player")]), player_url = player_url })
+    end
+end
+
+--cambiar sprite
+function change_sprite(self, sprite_id, tile_source, animation)
+    msg.post(sprite_id, "play_animation", { id = hash(animation), image = hash(tile_source) })
+end
+
+-- Generar posición aleatoria dentro de la pantalla
+function random_screen_position()
+	local x = math.random(550, 680)
+	local y = math.random(394, 500)
+	return vmath.vector3(x, y, 0)
+end
+
+function get_player_url()
+    return player_url -- Devuelve la URL del jugador
+end

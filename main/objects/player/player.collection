@@ -1,23 +1,24 @@
-name: "Barbarian"
-instances {
-  id: "Player"
-  prototype: "/main/objects/player/Player.go"
-  children: "Barbarian"
-  component_properties {
-    id: "Player"
-    properties {
-      id: "child_class_url"
-      value: "/Barbarian/Barbarian"
-      type: PROPERTY_TYPE_HASH
-    }
-  }
-}
+name: "player"
 scale_along_z: 0
 embedded_instances {
-  id: "Barbarian"
+  id: "player"
   data: "components {\n"
-  "  id: \"Barbarian\"\n"
-  "  component: \"/main/objects/player/Barbarian/Barbarian.script\"\n"
+  "  id: \"NewPlayer\"\n"
+  "  component: \"/main/objects/player/NewPlayer.script\"\n"
+  "}\n"
+  "embedded_components {\n"
+  "  id: \"sprite\"\n"
+  "  type: \"sprite\"\n"
+  "  data: \"default_animation: \\\"idle\\\"\\n"
+  "material: \\\"/builtins/materials/sprite.material\\\"\\n"
+  "textures {\\n"
+  "  sampler: \\\"texture_sampler\\\"\\n"
+  "  texture: \\\"/main/objects/player/Barbarian/BarbarianIdle.tilesource\\\"\\n"
+  "}\\n"
+  "\"\n"
+  "  position {\n"
+  "    y: -1.0\n"
+  "  }\n"
   "}\n"
   "embedded_components {\n"
   "  id: \"charactercollision\"\n"

@@ -21,9 +21,21 @@ animations {
   fps: 4
 }
 animations {
+  id: "attack_down_right"
+  start_tile: 87
+  end_tile: 91
+  fps: 4
+}
+animations {
   id: "attack_left"
   start_tile: 107
   end_tile: 111
+  fps: 4
+}
+animations {
+  id: "attack_right"
+  start_tile: 127
+  end_tile: 131
   fps: 4
 }
 animations {
@@ -36,6 +48,12 @@ animations {
   id: "attack_up_left"
   start_tile: 147
   end_tile: 151
+  fps: 4
+}
+animations {
+  id: "attack_up_right"
+  start_tile: 127
+  end_tile: 131
   fps: 4
 }
 animations {

@@ -11,6 +11,7 @@ local active_enemies = 0  -- Contador de enemigos activos
 local active_enemies_list = {}
 -- Referencia al enemy_factory
 local enemy_factory_url = "/enemies#enemy_factory"
+local player_url = nil
 
 -- Generar un enemigo en una posición aleatoria
 local function spawn_enemy()
@@ -22,7 +23,7 @@ local function spawn_enemy()
 	local enemy = collectionfactory.create(enemy_factory_url, position)
 	active_enemies = active_enemies + 1 -- Incrementar el contador de enemigos activos
 	-- Escuchar cuando el enemigo sea destruido
-	msg.post(enemy[hash("/enemy")], "set_enemy_type_x", { type = "goblin", url = msg.url(enemy[hash("/enemy")]) })
+	msg.post(enemy[hash("/enemy")], "set_enemy_type_x", { type = "goblin", url = msg.url(enemy[hash("/enemy")]), player_url = player_url })
 	-- Agregar a la lista de enemigos activos
 	--table.insert(active_enemies_list, { url = enemy[hash("/enemy")], type = "goblin" })
 end
@@ -84,6 +85,14 @@ function init(self)
 end
 
 function on_message(self, message_id, message, sender)
+	if message_id == hash("player_created") then
+		-- Guarda la URL del jugador
+		player_url = message.player_url
+        -- Notifica a todos los enemigos sobre el jugador
+        for _, enemy in ipairs(active_enemies_list) do
+            msg.post(enemy, "player_created", { player_url = message.player_url })
+        end
+    end
 	if message_id == hash("enemy_destroyed") then
 		on_enemy_destroyed()
 	end

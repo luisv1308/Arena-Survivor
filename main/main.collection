@@ -3,14 +3,6 @@ instances {
   id: "root"
   prototype: "/main/root.go"
 }
-collection_instances {
-  id: "Barbarian"
-  collection: "/main/objects/player/Barbarian/Barbarian.collection"
-  position {
-    x: 660.0
-    y: 394.0
-  }
-}
 scale_along_z: 0
 embedded_instances {
   id: "enemies"
@@ -25,6 +17,22 @@ embedded_instances {
   data: "components {\n"
   "  id: \"wave_manager\"\n"
   "  component: \"/main/wave_manager.script\"\n"
+  "}\n"
+  ""
+}
+embedded_instances {
+  id: "player"
+  data: "components {\n"
+  "  id: \"player_factory\"\n"
+  "  component: \"/main/objects/player/player_factory.collectionfactory\"\n"
+  "}\n"
+  ""
+}
+embedded_instances {
+  id: "player_manager"
+  data: "components {\n"
+  "  id: \"player_manager\"\n"
+  "  component: \"/main/player_manager.script\"\n"
   "}\n"
   ""
 }

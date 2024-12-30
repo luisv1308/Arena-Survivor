@@ -1,6 +1,6 @@
 components {
   id: "Player"
-  component: "/main/objects/player/Player.script"
+  component: "/main/objects/player/NewPlayer.script"
 }
 embedded_components {
   id: "sprite"

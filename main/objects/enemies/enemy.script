@@ -4,12 +4,12 @@ local Goblin = require "main/objects/enemies/goblin"
 local Dwarf = require "main/objects/enemies/dwarf"
 
 local player = nil  -- Variable para almacenar la referencia al jugador
-
+local player_url = nil
 function init(self)
     wave_manager = go.get_id("/wave_manager") 
 
     -- Obtener la referencia del jugador (usualmente con `go.get_id` o algún otro método de Defold)
-	player = go.get_id("/Barbarian/Player")  -- Cambia "/player" por la ruta correcta del jugador en tu escena
+	--player = go.get_id("/Player")  -- Cambia "/player" por la ruta correcta del jugador en tu escena
 
 	-- Determinar el tipo de enemigo desde un mensaje o variable
 	local enemy_type = self.enemy_type or "goblin" -- Por defecto, un goblin
@@ -88,7 +88,15 @@ end
 
 
 function on_message(self, message_id, message, sender)
+    if message_id == hash("player_created") then
+        -- Guarda la URL del jugador
+        player_url = message.player_url
+        player = go.get_id(player_url)
+    end
     if message_id == hash("set_enemy_type_x") then
+        -- Asignar player
+        player = message.player_url
+        --player_url = message.player_url
         -- Solo asignamos el tipo si aun no hemos creado al enemigo
         if message.type == "goblin" then
             self.enemy = Goblin:new()
@@ -110,7 +118,7 @@ function on_message(self, message_id, message, sender)
         self.velocity = push_vector -- Asumiendo que tienes una variable `velocity`
         
         -- O mueve directamente si no usas física
-        local new_position = go.get_position() + push_vector * 0.1 -- Escalar por un pequeño factor
+        local new_position = go.get_position() + push_vector * 0.01 -- Escalar por un pequeño factor
         go.set_position(new_position)
     end
     if message_id == hash("contact_point_response") then
