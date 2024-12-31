@@ -11,6 +11,7 @@ local player = nil  -- Variable para almacenar la referencia al jugador
 local player_url = nil
 function init(self)
     wave_manager = go.get_id("/wave_manager") 
+    self.active_enemies = nil
     
 
     -- Obtener la referencia del jugador (usualmente con `go.get_id` o algún otro método de Defold)
@@ -79,6 +80,10 @@ function on_message(self, message_id, message, sender)
         local new_position = go.get_position() + push_vector * 0.01 -- Escalar por un pequeño factor
         go.set_position(new_position)
     end
+    -- Active enemies
+    if message_id == hash("active_enemies") then
+        self.active_enemies = message.enemies
+    end
     if message_id == hash("contact_point_response") then
         if message.group == hash("player_weapon") then
             -- El enemigo recibe daño
@@ -119,6 +124,7 @@ function init_state_machine_enemy(self)
         enter = function()
             print("walking enemies enter")
             Animation.play_animation(self, "walk")
+            msg.post(wave_manager, "get_active_enemies")
         end,
         update = function(dt)
             -- Si el jugador existe
@@ -140,16 +146,22 @@ function init_state_machine_enemy(self)
                 local move_vector = direction * speed * dt
 
                 -- Comprobar la distancia entre este enemigo y los otros enemigos
-                local enemies = msg.post(wave_manager, "get_active_enemies")
-                if enemies then
-                    for _, other_enemy_url in ipairs(enemies) do
-                        if other_enemy_url ~= self.url then
-                            local other_enemy_pos = go.get_position(other_enemy_url)
+                
+                if  not self.active_enemies then
+                    print("no enemies")
+                    msg.post(wave_manager, "get_active_enemies")
+                end
+                if self.active_enemies then
+                    --local enemy_pos = go.get_position(self.url)
+                    for _, other_enemy_url in ipairs(self.active_enemies) do
+                        if msg.url(other_enemy_url.url) ~= self.url then
+                            local other_enemy_pos = go.get_position(other_enemy_url.url)
                             local separation_distance = vmath.length(other_enemy_pos - enemy_pos)
 
                             -- Si está demasiado cerca, aplica una corrección
-                            if separation_distance < 30 then  -- Ajusta este valor de distancia mínima
-                                move_vector = move_vector + vmath.normalize(enemy_pos - other_enemy_pos) * 10
+                            if separation_distance < 12 then  -- Ajusta este valor de distancia mínima
+                                --print("separation distance: " .. separation_distance, other_enemy_pos, enemy_pos)
+                                move_vector = move_vector + vmath.normalize(enemy_pos - other_enemy_pos) * 0.2
                             end
                         end
                     end

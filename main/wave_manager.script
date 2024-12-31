@@ -1,7 +1,7 @@
 local wave_data = {
 	current_wave = 1,     -- Número de la oleada actual
-	enemies_per_wave = 1, -- Enemigos por oleada inicial
-	spawn_interval = 1.0, -- Tiempo entre cada aparición de enemigo
+	enemies_per_wave = 20, -- Enemigos por oleada inicial
+	spawn_interval = 0.2, -- Tiempo entre cada aparición de enemigo
 	wave_interval = 5.0,  -- Tiempo entre oleadas
 	difficulty_scale = 1.2 -- Escalado de dificultad (opcional)
 }
@@ -15,8 +15,8 @@ local player_url = nil
 
 -- Generar un enemigo en una posición aleatoria
 local function spawn_enemy()
-	local x = math.random(550, 680) -- Coordenadas X aleatorias (ajusta según tu juego)
-	local y = math.random(394, 500) -- Coordenadas Y aleatorias
+	local x = math.random(350, 680) -- Coordenadas X aleatorias (ajusta según tu juego)
+	local y = math.random(194, 600) -- Coordenadas Y aleatorias
 	local position = vmath.vector3(x, y, 0)
 
 	-- Crear enemigo desde el factory
@@ -25,7 +25,7 @@ local function spawn_enemy()
 	-- Escuchar cuando el enemigo sea destruido
 	msg.post(enemy[hash("/enemy")], "set_enemy_type_x", { type = "goblin", url = msg.url(enemy[hash("/enemy")]), player_url = player_url })
 	-- Agregar a la lista de enemigos activos
-	--table.insert(active_enemies_list, { url = enemy[hash("/enemy")], type = "goblin" })
+	table.insert(active_enemies_list, { url = enemy[hash("/enemy")], type = "goblin" })
 end
 
 -- Iniciar una oleada
