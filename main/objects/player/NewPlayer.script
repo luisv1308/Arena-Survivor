@@ -23,6 +23,8 @@ function init(self)
 	self.input = vmath.vector3(0, 0, 0)
 	self.dir = vmath.vector3(0, 0, 0)
 	self.player_face_dir = vmath.vector3(1, 0, 0) -- Inicialmente mirando a la derecha
+	self.push_force = vmath.vector3(0, 0, 0) -- Fuerza de empuje inicial
+    self.is_pushed = false -- Bandera para saber si está siendo empujado
 	self.input_queue = {}
 	self.inputs_released = { left = true, right = true, up = true, down = true } -- check if input is released
 	self.move_keys = {
@@ -39,11 +41,13 @@ function init(self)
 	}
 
 	-- Inicializar máquina de estados
+	self.state_machine = StateMachine.new()
 	init_state_machine(self)
+	msg.post("#attackcollision", "disable") -- Habilitar el collisionobject del ataque
 end
 
 function update(self, dt)
-	self.sm:update(dt)
+	self.state_machine:update(dt)
 end
 
 function on_message(self, message_id, message, sender)
@@ -60,7 +64,7 @@ function on_message(self, message_id, message, sender)
 	--check collision
     if message_id == hash("contact_point_response") then
 		if message.group == hash("enemy") then
-			print("Colisionaste con un enemigo!")
+			print("Colisionaste con un enemigo!".. message_id)
 			--[[ if not self.invulnerable then
 				self.health = self.health - 10
 				print("Salud restante: " .. self.health)
@@ -70,10 +74,11 @@ function on_message(self, message_id, message, sender)
 			local player_pos = go.get_position() -- Posición del jugador
 
 			local enemy_pos = message.position -- Posición del enemigo (de la colisión)
-			local push_direction = vmath.normalize(enemy_pos - player_pos) -- Dirección hacia atrás
-			
-			-- Enviar mensaje al enemigo con la dirección y fuerza del empuje
-			msg.post(message.other_id, "apply_push", { direction = push_direction, force = 200 })
+			local player_push_direction = vmath.normalize(player_pos - enemy_pos)			
+			-- Aplica la fuerza de empuje
+			self.push_force = player_push_direction * 200 -- Ajusta la magnitud del empuje
+            -- Cambia al estado pushed
+			self.state_machine:set_state("pushed")			
 		end
     end
 end
@@ -83,42 +88,49 @@ function on_input(self, action_id, action)
 	table.insert(self.input_queue, { action_id = action_id, action = action })
 
 	-- Si está atacando, ignorar otros inputs
-	if self.sm:get_state() == "attacking" then return end
+	if self.state_machine:get_state() == "attacking" then return end
 
 	-- Manejar inputs de movimiento
 	if self.move_keys[action_id] then
 		if action.pressed then
-			self.sm:set_state("walking")
+			self.state_machine:set_state("walking")
 		elseif action.released then
-			self.sm:set_state("idle")
+			self.state_machine:set_state("idle")
 		end
 	end
 
 	-- Manejar inputs de ataque
 	if action_id == hash("attack") and action.pressed then
-		self.sm:set_state("attacking")
+		self.state_machine:set_state("attacking")
 	end
 end
 
+function calculate_player_push_direction(self)
+	local player_pos = go.get_position()
+	local push_direction = vmath.normalize(self.input)
+	return push_direction
+end
+
 function init_state_machine(self)
-	self.sm = StateMachine.new()
+	
 
 	-- Estado "idle"
-	self.sm:add_state("idle", {
+	self.state_machine:add_state("idle", {
 		enter = function()
+			print("idle fucka")
 			Animation.play_animation(self, "idle")
 		end,
 		update = function(dt)
 			if next(self.input_queue) then
-				self.sm:set_state("walking")
+				self.state_machine:set_state("walking")
 			end
 		end
 	})
 
 	-- Estado "walking"
-	self.sm:add_state("walking", {
+	self.state_machine:add_state("walking", {
 		enter = function()
-			Animation.play_animation(self, "walk_right")
+			--Animation.play_animation(self, "walk")
 		end,
 		update = function(dt)
 			Movement.move(self, dt)
@@ -128,13 +140,13 @@ function init_state_machine(self)
 				end
 				self.input_queue = {}
 			else
-				self.sm:set_state("idle")
+				self.state_machine:set_state("idle")
 			end
 		end
 	})
 
 	-- Estado "attacking"
-	self.sm:add_state("attacking", {
+	self.state_machine:add_state("attacking", {
 		enter = function()
 			-- Si hay movimiento, cambiar la dirección y la animación
             local size_vector = vmath.length(self.input)
@@ -177,7 +189,7 @@ function init_state_machine(self)
 		update = function(dt)
 			self.attack_timer = self.attack_timer - dt
 			if self.attack_timer <= 0 then
-				self.sm:set_state("idle")
+				self.state_machine:set_state("idle")
 			end
 		end,
 		exit = function()
@@ -189,6 +201,33 @@ function init_state_machine(self)
 		end
 	})
 
+	-- Estado "pushed"
+	self.state_machine:add_state("pushed", {
+		enter = function()
+			-- Configurar la animación de empuje (opcional)
+			--Animation.play_animation(self, "pushed")
+			-- Ejemplo de efecto visual
+			msg.post("@render:", "shake", { intensity = 5, duration = 0.2 })
+			-- La fuerza de empuje ya debe estar configurada al entrar en este estado
+		end,
+		update = function(dt)
+			-- Mover al jugador según la fuerza de empuje
+			local current_position = go.get_position()
+			local new_position = current_position + self.push_force * dt
+			go.set_position(new_position)
+
+			-- Reducir gradualmente la fuerza de empuje
+			self.push_force = self.push_force * 0.9 -- Ajusta el factor de desaceleración
+			if vmath.length(self.push_force) < 1 then
+				self.state_machine:set_state("idle") -- Volver al estado idle cuando el empuje termine
+			end
+		end,
+		exit = function()
+			-- Lógica al salir del estado pushed, si es necesario
+			self.push_force = vmath.vector3(0, 0, 0) -- Reiniciar la fuerza de empuje
+		end
+	})
+
 	-- Estado inicial
-	self.sm:set_state("idle")
+	self.state_machine:set_state("idle")
 end

@@ -3,10 +3,15 @@ local wave_manager = null
 local Goblin = require "main/objects/enemies/goblin"
 local Dwarf = require "main/objects/enemies/dwarf"
 
+local Animation = require "main/objects/player/Animation"
+local StateMachine = require "main.state_machine"
+
+
 local player = nil  -- Variable para almacenar la referencia al jugador
 local player_url = nil
 function init(self)
     wave_manager = go.get_id("/wave_manager") 
+    
 
     -- Obtener la referencia del jugador (usualmente con `go.get_id` o algún otro método de Defold)
 	--player = go.get_id("/Player")  -- Cambia "/player" por la ruta correcta del jugador en tu escena
@@ -21,68 +26,21 @@ function init(self)
 	end
 
     -- Agregar este enemigo a la lista del enemy_manager
-    msg.post(wave_manager, "add_enemy", { enemy_url = self.url })
+    --msg.post(wave_manager, "add_enemy", { enemy_url = self.url })
 
     -- Agregar todos los enemigos activos a la lista de enemigos activos
 	-- Configurar atributos iniciales
 	print(self.enemy.name .. " spawned with " .. self.enemy.health .. " health.")
+
+    -- Inicializar la maquina de estados
+    self.state_machine_enemy = StateMachine.new()
+    init_state_machine_enemy(self)
+    --self.state_machine_enemy:set_state("walking")
 end
 
 function update(self, dt)
-    -- Si usas física o quieres suavizar el empuje
-    if self.velocity then
-        local pos = go.get_position()
-        pos = pos + self.velocity * dt
-        go.set_position(pos)
-        
-        -- Reducir la velocidad gradualmente para simular fricción
-        self.velocity = self.velocity * 0.9
-        if vmath.length(self.velocity) < 0.1 then
-            self.velocity = nil -- Detener movimiento si la velocidad es muy baja
-        end
-    end
-    -- Si el jugador existe
-    if player and self.url then
-        local player_pos = go.get_position(player)
-        local enemy_pos = go.get_position(self.url)
-
-        -- Calcular la dirección hacia el jugador
-        local direction = player_pos - enemy_pos
-        local distance = vmath.length(direction)
-
-        -- Normalizar la dirección
-        if distance > 0 then
-            direction = vmath.normalize(direction)
-        end
-
-        -- Mover al enemigo
-        local speed = self.enemy.speed  -- Usa la velocidad definida para el enemigo
-        local move_vector = direction * speed * dt
-
-        -- Comprobar la distancia entre este enemigo y los otros enemigos
-        local enemies = msg.post(wave_manager, "get_active_enemies")
-        if enemies then
-            for _, other_enemy_url in ipairs(enemies) do
-                if other_enemy_url ~= self.url then
-                    local other_enemy_pos = go.get_position(other_enemy_url)
-                    local separation_distance = vmath.length(other_enemy_pos - enemy_pos)
-
-                    -- Si está demasiado cerca, aplica una corrección
-                    if separation_distance < 30 then  -- Ajusta este valor de distancia mínima
-                        move_vector = move_vector + vmath.normalize(enemy_pos - other_enemy_pos) * 10
-                    end
-                end
-            end
-        end
-
-        -- Actualizamos la posición
-        go.set_position(enemy_pos + move_vector, self.id)
-
-        -- Si el enemigo está cerca del jugador, atacar
-        if distance < 50 then
-            --self.enemy:attack()
-        end
-    end
+    
+    self.state_machine_enemy:update(dt)
 end
 
 
@@ -127,10 +85,23 @@ function on_message(self, message_id, message, sender)
             if self.enemy then
                 self.enemy:take_damage(10) -- Ajusta el daño según sea necesario
             end
-            print("Enemy took damage!***************************************************" .. self.enemy.health)
+            -- Agregar push al enemigo
+            -- Obtener el estado actual
+            local current_state = self.state_machine_enemy:get_state()
+            print("current state: " .. current_state)
+            if current_state ~= "pushed_enemy" then
+                self.state_machine_enemy:set_state("pushed_enemy", 40)
+            end
         elseif message.group == hash("player_body") then
             -- Colisión con el cuerpo del jugador (puedes manejar esto si es necesario)
             print("Enemy collided with the player!")
+            -- Agregar push al enemigo
+            -- Obtener el estado actual
+            local current_state = self.state_machine_enemy:get_state()
+            print("current state: " .. current_state)
+            if current_state ~= "pushed_enemy" then
+                self.state_machine_enemy:set_state("pushed_enemy", 10)
+            end
         end
     end
     if message_id == hash("damage_taken") and self.health <= 0 then
@@ -138,5 +109,102 @@ function on_message(self, message_id, message, sender)
         msg.post(wave_manager, "remove_enemy", { enemy_url = self.url })  -- Eliminar del enemy_manager
         go.delete() -- Destruir al enemigo
     end
+end
+
+function init_state_machine_enemy(self)
+    --self.state_machine_enemy = StateMachine.new()
+    --self.state_machine_enemy:set_state("idle")
+    -- Estado walking
+    self.state_machine_enemy:add_state("walking", {
+        enter = function()
+            print("walking enemies enter")
+            Animation.play_animation(self, "walk")
+        end,
+        update = function(dt)
+            -- Si el jugador existe
+            if player and self.url then
+                local player_pos = go.get_position(player)
+                local enemy_pos = go.get_position(self.url)
+
+                -- Calcular la dirección hacia el jugador
+                local direction = player_pos - enemy_pos
+                local distance = vmath.length(direction)
+
+                -- Normalizar la dirección
+                if distance > 0 then
+                    direction = vmath.normalize(direction)
+                end
+
+                -- Mover al enemigo
+                local speed = self.enemy.speed  -- Usa la velocidad definida para el enemigo
+                local move_vector = direction * speed * dt
+
+                -- Comprobar la distancia entre este enemigo y los otros enemigos
+                local enemies = msg.post(wave_manager, "get_active_enemies")
+                if enemies then
+                    for _, other_enemy_url in ipairs(enemies) do
+                        if other_enemy_url ~= self.url then
+                            local other_enemy_pos = go.get_position(other_enemy_url)
+                            local separation_distance = vmath.length(other_enemy_pos - enemy_pos)
+
+                            -- Si está demasiado cerca, aplica una corrección
+                            if separation_distance < 30 then  -- Ajusta este valor de distancia mínima
+                                move_vector = move_vector + vmath.normalize(enemy_pos - other_enemy_pos) * 10
+                            end
+                        end
+                    end
+                end
+
+                -- Actualizamos la posición
+                go.set_position(enemy_pos + move_vector, self.id)
+
+                -- Si el enemigo está cerca del jugador, atacar
+                if distance < 50 then
+                    --self.enemy:attack()
+                end
+            end
+        end
+    })
+
+    -- Estado pushed
+    self.state_machine_enemy:add_state("pushed_enemy", {
+        enter = function(push_force)
+            print("pushed force: " .. push_force)
+            --Animation.play_animation(self, "pushed")
+            self.push_force = push_force
+            if player and self.url and self.push_force then
+                -- Agregar push al enemigo
+                local player_pos = go.get_position(player)
+                local enemy_pos = go.get_position(self.url)
+                local direction = enemy_pos - player_pos
+                local force = vmath.length(direction) * self.push_force
+                local push_vector = vmath.normalize(direction) * force
+                self.velocity = push_vector
+            end
+        end,
+        update = function(dt)
+            -- Si usas física o quieres suavizar el empuje
+            if self.velocity then
+                local pos = go.get_position()
+                pos = pos + self.velocity * dt
+                go.set_position(pos)
+                
+                -- Reducir la velocidad gradualmente para simular fricción
+                self.velocity = self.velocity * 0.9
+                if vmath.length(self.velocity) < 0.1 then
+                    self.velocity = nil -- Detener movimiento si la velocidad es muy baja
+                    self.state_machine_enemy:set_state("walking")
+                end
+            end
+        end,
+        exit = function()
+            print("pushed exit")
+            Animation.play_animation(self, "walk")
+            
+        end
+    })
+
+    -- Estado inicial
+    self.state_machine_enemy:set_state("walking")
 end
 

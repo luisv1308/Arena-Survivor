@@ -4,8 +4,8 @@ tile_height: 32
 collision_groups: "default"
 animations {
   id: "walk"
-  start_tile: 1
-  end_tile: 1
+  start_tile: 117
+  end_tile: 120
   playback: PLAYBACK_LOOP_FORWARD
   fps: 5
 }

@@ -1,10 +1,12 @@
 local M = {}
 
 -- Reproduce una animación si no es la actual
-function M.play_animation(self, animation)
+function M.play_animation(self, animation, url)
+    --checar si url es null
+    url = url or "#sprite"
     if self.current_animation ~= animation then
         self.current_animation = animation
-        sprite.play_flipbook("#sprite", animation, function()
+        sprite.play_flipbook(url, animation, function()
             M.complete_animation(animation)
         end)
     end
@@ -12,7 +14,7 @@ end
 
 -- Lógica cuando una animación se completa
 function M.complete_animation(animation)
-    msg.post("#", "complete_animation", { id = hash(animation) })
+    --msg.post("#", "complete_animation", { id = hash(animation) })
 end
 
 -- Cambia el sprite objetivo dinámicamente (útil si tienes múltiples sprites)
