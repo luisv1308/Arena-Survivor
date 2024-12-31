@@ -155,14 +155,18 @@ function init_state_machine_enemy(self)
                     --local enemy_pos = go.get_position(self.url)
                     for _, other_enemy_url in ipairs(self.active_enemies) do
                         if msg.url(other_enemy_url.url) ~= self.url then
-                            local other_enemy_pos = go.get_position(other_enemy_url.url)
-                            local separation_distance = vmath.length(other_enemy_pos - enemy_pos)
+                            -- Checar que objeto existe 
+                            if does_object_exist(other_enemy_url.url) then
+                                local other_enemy_pos = go.get_position(other_enemy_url.url)
+                                local separation_distance = vmath.length(other_enemy_pos - enemy_pos)
 
-                            -- Si está demasiado cerca, aplica una corrección
-                            if separation_distance < 12 then  -- Ajusta este valor de distancia mínima
-                                --print("separation distance: " .. separation_distance, other_enemy_pos, enemy_pos)
-                                move_vector = move_vector + vmath.normalize(enemy_pos - other_enemy_pos) * 0.2
+                                -- Si está demasiado cerca, aplica una corrección
+                                if separation_distance < 12 then  -- Ajusta este valor de distancia mínima
+                                    --print("separation distance: " .. separation_distance, other_enemy_pos, enemy_pos)
+                                    move_vector = move_vector + vmath.normalize(enemy_pos - other_enemy_pos) * 0.2
+                                end
                             end
+                            
                         end
                     end
                 end
@@ -220,3 +224,6 @@ function init_state_machine_enemy(self)
     self.state_machine_enemy:set_state("walking")
 end
 
+function does_object_exist(id)
+    return pcall(function(id) go.get_position(id) end, id) == true
+end
