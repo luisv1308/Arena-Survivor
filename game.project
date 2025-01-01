@@ -27,4 +27,5 @@ subpixels = 0
 
 [physics]
 debug = 0
+gravity_y = 0.0
 

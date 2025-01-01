@@ -1,4 +1,5 @@
 local wave_manager = null
+local enemy_manager = require "main/enemy_manager"
 
 local Goblin = require "main/objects/enemies/goblin"
 local Dwarf = require "main/objects/enemies/dwarf"
@@ -124,7 +125,8 @@ function init_state_machine_enemy(self)
         enter = function()
             print("walking enemies enter")
             Animation.play_animation(self, "walk")
-            msg.post(wave_manager, "get_active_enemies")
+            --msg.post(wave_manager, "get_active_enemies")
+            self.active_enemies = enemy_manager.get_active_enemies()
         end,
         update = function(dt)
             -- Si el jugador existe
@@ -149,21 +151,24 @@ function init_state_machine_enemy(self)
                 
                 if  not self.active_enemies then
                     print("no enemies")
-                    msg.post(wave_manager, "get_active_enemies")
+                    self.active_enemies = enemy_manager.get_active_enemies()
                 end
                 if self.active_enemies then
                     --local enemy_pos = go.get_position(self.url)
                     for _, other_enemy_url in ipairs(self.active_enemies) do
-                        if msg.url(other_enemy_url.url) ~= self.url then
+                        if msg.url(other_enemy_url) ~= self.url then
                             -- Checar que objeto existe 
-                            if does_object_exist(other_enemy_url.url) then
-                                local other_enemy_pos = go.get_position(other_enemy_url.url)
-                                local separation_distance = vmath.length(other_enemy_pos - enemy_pos)
+                            if does_object_exist(other_enemy_url) then
+                                local other_enemy_pos = go.get_position(other_enemy_url)
+                                local separation_vector = enemy_pos - other_enemy_pos
+                                local separation_distance = vmath.length(separation_vector)
 
                                 -- Si está demasiado cerca, aplica una corrección
                                 if separation_distance < 12 then  -- Ajusta este valor de distancia mínima
                                     --print("separation distance: " .. separation_distance, other_enemy_pos, enemy_pos)
-                                    move_vector = move_vector + vmath.normalize(enemy_pos - other_enemy_pos) * 0.2
+                                    move_vector = move_vector + vmath.normalize(separation_vector) * 0.2
+                                    -- local push_strength = (12 - separation_distance) * 0.5  -- Fuerza proporcional a la cercanía
+                                    -- move_vector = move_vector + vmath.normalize(separation_vector) * push_strength
                                 end
                             end
                             

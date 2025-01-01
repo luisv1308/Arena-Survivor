@@ -1,3 +1,5 @@
+local enemy_manager = require "main/enemy_manager"
+
 local wave_data = {
 	current_wave = 1,     -- Número de la oleada actual
 	enemies_per_wave = 20, -- Enemigos por oleada inicial
@@ -26,6 +28,7 @@ local function spawn_enemy()
 	msg.post(enemy[hash("/enemy")], "set_enemy_type_x", { type = "goblin", url = msg.url(enemy[hash("/enemy")]), player_url = player_url })
 	-- Agregar a la lista de enemigos activos
 	table.insert(active_enemies_list, { url = enemy[hash("/enemy")], type = "goblin" })
+	enemy_manager.add_enemy(msg.url(enemy[hash("/enemy")]))
 end
 
 -- Iniciar una oleada
@@ -66,6 +69,7 @@ function remove_enemy(enemy_url)
             break
         end
     end
+	enemy_manager.remove_enemy(enemy_url)
 end
 
 -- Obtener todos los enemigos activos
