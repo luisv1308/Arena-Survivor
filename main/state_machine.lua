@@ -39,4 +39,12 @@ function StateMachine:update(dt)
     end
 end
 
+function StateMachine:exit_current_state()
+    if self.current_state and self.states[self.current_state].exit then
+        self.states[self.current_state].exit()
+    end
+    self.previous_state = self.current_state
+    self.current_state = nil
+end
+
 return StateMachine

@@ -27,4 +27,8 @@ function M.get_current_animation(self)
     return self.current_animation
 end
 
+function M.stop_animation(self)
+    self.current_animation = nil
+end
+
 return M

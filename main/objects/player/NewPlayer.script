@@ -17,7 +17,7 @@ function init(self)
 	self.base_speed = 100
 	self.moving = false
 	self.attack_power = 10
-	self.attack_cooldown = 1
+	self.attack_cooldown = 0.7
 	self.last_attack_time = 0
 	self.attacking = false
 	self.input = vmath.vector3(0, 0, 0)
@@ -27,6 +27,13 @@ function init(self)
     self.is_pushed = false -- Bandera para saber si está siendo empujado
 	self.input_queue = {}
 	self.inputs_released = { left = true, right = true, up = true, down = true } -- check if input is released
+	self.attack_collisions = {
+		upleft = "#attackcollisionupleft",
+		upright = "#attackcollisionupright",
+		downleft = "#attackcollisiondownleft",
+		downright = "#attackcollisiondownright",
+	}
+	self.collision_direction = self.attack_collisions.left
 	self.move_keys = {
 		[hash("up")] = true,
 		[hash("down")] = true,
@@ -43,12 +50,17 @@ function init(self)
 	-- Inicializar máquina de estados
 	self.state_machine = StateMachine.new()
 	init_state_machine(self)
-	msg.post("#attackcollision", "disable") -- Habilitar el collisionobject del ataque
+	-- Desactivar todas las colisiones de ataques usando sus nombres en array
+	for _, collision in pairs(self.attack_collisions) do
+		msg.post(collision, "disable")
+	end
+	
 	self.cursor = go.get("#sprite", "cursor")
 end
 
 function update(self, dt)
 	self.state_machine:update(dt)
+	
 end
 
 function on_message(self, message_id, message, sender)
@@ -119,46 +131,88 @@ function calculate_player_push_direction(self)
 end
 
 function init_state_machine(self)
-	
-
+	-- Estado "idle"
 	-- Estado "idle"
 	self.state_machine:add_state("idle", {
 		enter = function()
+			print("idle enter")
 			-- Checar si player mira a la izquierda o derecha
 			if self.player_face_dir.x > 0 then
 				Animation.play_animation(self, "idle")
 			else
 				Animation.play_animation(self, "idle_left")
 			end
+			
 		end,
 		update = function(dt)
-			if next(self.input_queue) then
-				self.state_machine:set_state("walking")
+			for key, released in pairs(self.inputs_released) do
+				if not released then
+					self.state_machine:set_state("walking")
+					return
+				end
 			end
+		end,
+		exit = function()
+			print("idle exit")
 		end
 	})
 
 	-- Estado "walking"
 	self.state_machine:add_state("walking", {
 		enter = function()
-			--Animation.play_animation(self, "walk")
+			print("walking enter")
+			if self.player_face_dir.x > 0 then
+				Animation.play_animation(self, "walk_down_right")
+			else
+				Animation.play_animation(self, "walk_down_left")
+			end
+			if next(self.input_queue) then
+				local filtered_queue = {}
+				for _, input in ipairs(self.input_queue) do
+					if input.action_id ~= hash("attack") then
+						table.insert(filtered_queue, input)
+					end
+				end
+				self.input_queue = filtered_queue
+			
+				-- Procesar los inputs restantes
+				for _, input in ipairs(self.input_queue) do
+					Movement.handle_input(self, input.action_id, input.action, Animation)
+				end
+			
+				-- Limpiar la cola después de procesar
+				self.input_queue = {}
+			end
 		end,
 		update = function(dt)
+			print("update walking")
 			Movement.move(self, dt)
+			local size_vector = vmath.length(self.input)
+			-- Checar si no se mueve
+			if size_vector == 0 then
+				self.state_machine:set_state("idle")
+			end
+			-- Sino pues procesar los inputs
 			if next(self.input_queue) then
 				for _, input in ipairs(self.input_queue) do
 					Movement.handle_input(self, input.action_id, input.action, Animation)
 				end
 				self.input_queue = {}
 			else
+				print("no input super idle")
 				self.state_machine:set_state("idle")
 			end
+		end,
+		exit = function()
+			print("walking exit")
 		end
 	})
 
 	-- Estado "attacking"
 	self.state_machine:add_state("attacking", {
 		enter = function()
+			print("attacking enter")
+			--self.input_queue = {}
 			self.collision_active = false
 			-- Si hay movimiento, cambiar la dirección y la animación
             local size_vector = vmath.length(self.input)
@@ -167,45 +221,59 @@ function init_state_machine(self)
     
                 -- Determinar si el personaje mira a la izquierda o derecha
                 if self.dir.x > 0 then
-                    go.set_rotation(vmath.quat(), "#sprite") -- Orientación normal (mirando a la derecha)
+                    --go.set_rotation(vmath.quat(), "#sprite") -- Orientación normal (mirando a la derecha)
                     self.player_face_dir.x = 1
                 elseif self.dir.x < 0 then
-                    go.set_rotation(vmath.quat_rotation_y(math.pi), "#sprite") -- Reflejar horizontalmente (mirando a la izquierda)
+                    --go.set_rotation(vmath.quat_rotation_y(math.pi), "#sprite") -- Reflejar horizontalmente (mirando a la izquierda)
                     self.player_face_dir.x = -1
                 end
-    
-                -- Cambiar animación de ataque según dirección vertical
-                if self.dir.y > 0 then
-                    Animation.play_animation(self, "attack_up")
-                elseif self.dir.y < 0 then
-                    Animation.play_animation(self, "attack_down")
-                else
-                    Animation.play_animation(self, "attack") -- Animación neutral si no hay dirección vertical
-                end
+				print("Con movimiento", self.collision_direction)
+                -- Cambiar animación de ataque según direccion vertical
+                if self.dir.y > 0 and self.player_face_dir.x > 0 then
+					self.collision_direction = self.attack_collisions.upright
+                    Animation.play_animation(self, "attack_up_right")
+                elseif self.dir.y < 0 and self.player_face_dir.x > 0 then
+					self.collision_direction = self.attack_collisions.downright
+                    Animation.play_animation(self, "attack_down_right")
+				elseif self.dir.y > 0 and self.player_face_dir.x < 0 then
+					self.collision_direction = self.attack_collisions.upleft
+                    Animation.play_animation(self, "attack_up_left")
+                elseif self.dir.y < 0 and self.player_face_dir.x < 0 then
+					self.collision_direction = self.attack_collisions.downleft
+                    Animation.play_animation(self, "attack_down_left")
+				elseif self.dir.x > 0 then
+					self.collision_direction = self.attack_collisions.downright
+                    Animation.play_animation(self, "attack_down_right")
+				elseif self.dir.x < 0 then
+					self.collision_direction = self.attack_collisions.downleft
+                    Animation.play_animation(self, "attack_down_left")
+				end
             else
-                -- Sin movimiento: usar dirección actual para reflejar el sprite
+				print("Sin movimiento", self.collision_direction)
+                -- Sin movimiento: usar direccion actual para reflejar el sprite
                 if self.player_face_dir.x > 0 then
-                    go.set_rotation(vmath.quat(), "#sprite")
+					self.collision_direction = self.attack_collisions.downright
+                    Animation.play_animation(self, "attack_down_right")
                 else
-                    go.set_rotation(vmath.quat_rotation_y(math.pi), "#sprite")
+					self.collision_direction = self.attack_collisions.downleft
+                    Animation.play_animation(self, "attack_down_left")
                 end
-    
-                -- Animación neutral de ataque
-                Animation.play_animation(self, "attack")
             end
     
             -- Configurar un temporizador para salir del estado de ataque
             self.attack_timer = self.attack_cooldown
             --msg.post("#attackcollision", "enable") -- Habilitar el collisionobject del ataque
+			
 		end,
 		update = function(dt)
-			self.attack_timer = self.attack_timer - dt
-			if self.attack_timer <= 0 then
-				self.state_machine:set_state("idle")
-			end
+			
 			-- Obtén el progreso actual de la animación
 			local cursor = go.get("#sprite", "cursor")
 			local frame_count = go.get("#sprite", "frame_count")
+			if cursor >= 1 then
+				--print("Último frame alcanzado")
+				
+			end
 		
 			-- Calcula el frame actual
 			local current_frame = math.floor(cursor * frame_count) + 1 -- +1 porque los frames son 1-indexados
@@ -215,19 +283,26 @@ function init_state_machine(self)
 		
 			-- Si el frame coincide con el de ataque, activa la colisión
 			if (current_frame == 4 or current_frame == 5) and not self.collision_active then
-				msg.post("#attackcollision", "enable")
+				msg.post(self.collision_direction, "enable")
 				self.collision_active = true
 			elseif (current_frame ~= 4 and current_frame ~= 5) and self.collision_active then
-				msg.post("#attackcollision", "disable")
+				msg.post(self.collision_direction, "disable")
 				self.collision_active = false
+			end
+
+			self.attack_timer = self.attack_timer - dt
+			if self.attack_timer <= 0 then
+				msg.post("#sprite", "stop_animation")
+				
+				Animation.stop_animation(self)
+				self.state_machine:exit_current_state()
+				self.state_machine:set_state("idle")
+				
 			end
 		end,
 		exit = function()
-			--Combat.end_attack(self)
-			-- restaurar sprite rotacion a normal
-			go.set_rotation(vmath.quat(), "#sprite")
 			print("Exiting attacking state")
-			msg.post("#attackcollision", "disable") -- Deshabilitar el collisionobject del ataque
+			msg.post(self.collision_direction, "disable") -- Deshabilitar el collisionobject del ataque
 		end
 	})
 
@@ -237,7 +312,7 @@ function init_state_machine(self)
 			-- Configurar la animación de empuje (opcional)
 			--Animation.play_animation(self, "pushed")
 			-- Ejemplo de efecto visual
-			msg.post("@render:", "shake", { intensity = 5, duration = 0.2 })
+			--msg.post("@render:", "shake", { intensity = 5, duration = 0.2 })
 			-- La fuerza de empuje ya debe estar configurada al entrar en este estado
 		end,
 		update = function(dt)
