@@ -2,7 +2,7 @@ local enemy_manager = require "main/enemy_manager"
 
 local wave_data = {
 	current_wave = 1,     -- Número de la oleada actual
-	enemies_per_wave = 0, -- Enemigos por oleada inicial
+	enemies_per_wave = 1, -- Enemigos por oleada inicial
 	spawn_interval = 0.2, -- Tiempo entre cada aparición de enemigo
 	wave_interval = 5.0,  -- Tiempo entre oleadas
 	difficulty_scale = 1.2 -- Escalado de dificultad (opcional)

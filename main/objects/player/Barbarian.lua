@@ -4,7 +4,7 @@ local Barbarian = Player:new()
 
 
 function Barbarian:new()
-	local instance = Player.new(self, "Barbarian", 100, 70)
+	local instance = Player.new(self, "Barbarian", 20, 70, 1)
 	setmetatable(instance, { __index = self })
 	instance.special_attack = "Whirlwind"
 	return instance

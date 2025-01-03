@@ -1,12 +1,13 @@
 local Enemy = {}
 
-function Enemy:new(name, health, speed)
+function Enemy:new(name, health, speed, attack_damage)
     --print(id)
     local instance = {
         name = name or "Unnamed Enemy",
         health = health or 20,
         speed = speed or 50,
         is_alive = true,
+        attack_damage = attack_damage or 10
     }
     setmetatable(instance, { __index = self })
     return instance

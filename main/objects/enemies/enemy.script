@@ -68,9 +68,12 @@ function on_message(self, message_id, message, sender)
         print(self.enemy.name .. " spawned with " .. self.enemy.health .. " health.")
         
     elseif message_id == hash("take_damage") then
+        print("Enemigo atacado ---------------------2")
         if self.enemy then
             self.enemy:take_damage(message.amount)
         end
+    elseif message_id == hash("player_die") then
+        player = nil
     end
     if message_id == hash("apply_push") then
         -- Aplicar el empuje al enemigo
@@ -87,10 +90,6 @@ function on_message(self, message_id, message, sender)
     end
     if message_id == hash("contact_point_response") then
         if message.group == hash("player_weapon") then
-            -- El enemigo recibe daño
-            if self.enemy then
-                self.enemy:take_damage(10) -- Ajusta el daño según sea necesario
-            end
             -- Agregar push al enemigo
             -- Obtener el estado actual
             local current_state = self.state_machine_enemy:get_state()
@@ -101,6 +100,8 @@ function on_message(self, message_id, message, sender)
         elseif message.group == hash("player_body") then
             -- Colisión con el cuerpo del jugador (puedes manejar esto si es necesario)
             print("Enemy collided with the player!")
+            -- Agregar daño al jugador
+            msg.post(player, "take_damage", { amount = self.enemy.attack_damage })
             -- Agregar push al enemigo
             -- Obtener el estado actual
             local current_state = self.state_machine_enemy:get_state()
@@ -129,6 +130,11 @@ function init_state_machine_enemy(self)
             self.active_enemies = enemy_manager.get_active_enemies()
         end,
         update = function(dt)
+            -- Si jugador no existe o no hay URL del jugador, salir del estado
+            if go.get_position(player) == nill then
+                self.state_machine_enemy:set_state("idle")
+                return
+            end
             -- Si el jugador existe
             if player and self.url then
                 local player_pos = go.get_position(player)
