@@ -314,8 +314,7 @@ function init_state_machine(self)
 				
 				Animation.stop_animation(self)
 				self.state_machine:exit_current_state()
-				self.state_machine:set_state("idle")
-				
+				self.state_machine:set_state("walking")
 			end
 		end,
 		exit = function()
